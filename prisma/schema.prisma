@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Models
+
+model User {
+  id             String          @id @default(uuid())
+  firstName      String
+  lastName       String
+  email          String          @unique
+  password       String
+  phone          String?
+  role           String          @default("USER")
+  profilePic     String?
+  bookings       Booking[]
+  notifications  Notification[]
+  hotelOwner     HotelOwner?
+  hotelBookings  HotelBooking[]
+  flightBookings FlightBooking[]
+}
+
+model HotelOwner {
+  id     String  @id @default(uuid())
+  userId String  @unique
+  hotels Hotel[]
+  user   User    @relation(fields: [userId], references: [id])
+}
+
+model Itinerary {
+  id        String          @id @default(uuid())
+  flights   FlightBooking[]
+  hotels    HotelBooking[]
+  bookingId String?         @unique
+  booking   Booking?        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status    String
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Booking {
+  id          String     @id @default(uuid())
+  itinerary   Itinerary?
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  status      String
+  bookingDate DateTime   @default(now())
+}
+
+model FlightBooking {
+  id                 String     @id @default(uuid())
+  flightId           String
+  flightNumber       String
+  departureTime      String
+  originCode         String
+  originName         String
+  originCity         String
+  originCountry      String
+  arrivalTime        String
+  destinationCode    String
+  destinationName    String
+  destinationCity    String
+  destinationCountry String
+  duration           Int
+  price              Int
+  currency           String
+  availableSeats     Int
+  status             String
+  airlineName        String
+  itineraryId        String?
+  itinerary          Itinerary? @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User       @relation(fields: [userId], references: [id])
+  passportNumber  String
+  email String  @unique
+}
+
+model Hotel {
+  id            String         @id @default(uuid())
+  name          String
+  logo          String?
+  address       String
+  location      String
+  starRating    Int
+  images        Json
+  ownerId       String
+  owner         HotelOwner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rooms         Room[]
+  hotelBookings HotelBooking[]
+}
+
+model Room {
+  id            String         @id @default(uuid())
+  type          String
+  amenities     Json
+  pricePerNight Float
+  images        Json
+  hotelId       String
+  available     Boolean        @default(true)
+  hotel         Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotelBookings HotelBooking[]
+}
+
+model HotelBooking {
+  id           String     @id @default(uuid())
+  hotelId      String
+  hotel        Hotel      @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomId       String
+  room         Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingDate  DateTime   @default(now())
+  checkInDate  DateTime
+  checkOutDate DateTime
+  status       String
+  itineraryId  String?
+  itinerary    Itinerary? @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+}
+
+model City {
+  id        Int     @id @default(autoincrement())
+  city      String  @unique
+  country   String
+}
+
+model Airport {
+  id        String  @id @unique
+  name      String
+  code      String
+  city      String
+  country   String
+}
