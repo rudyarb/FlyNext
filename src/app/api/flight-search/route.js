@@ -221,6 +221,53 @@ export async function POST(request) {
     }
 }
 
+
+
+export async function DELETE(request) {
+    try {
+        const { bookingReference, flightBookingId, lastName } = await request.json();
+    
+        if (!bookingReference || !lastName) {
+            return new Response(
+                JSON.stringify({ error: "Something went wrong! Flight booking could not be cancelled!"}),
+                { status: 400, headers: { "Content-Type": "application/json" } }
+              );
+        }
+    
+        // Proceed to booking process
+        const AFS_API_KEY = "64a61055322c29c719f9ec0ae7ce7cbf6145316fa3001096c3fadc50a0582863";
+        const url = "https://advanced-flights-system.replit.app/api/bookings/cancel";
+  
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            "x-api-key": AFS_API_KEY || "",
+            },
+            body: JSON.stringify({ bookingReference, lastName }),
+        });
+    
+        // const result = await response.json();
+
+        // Also delete from our DB
+        await prisma.flightBooking.delete({
+            where: { flightBookingId },
+          });
+
+        return new Response(
+            JSON.stringify({ message: "The flight booking was cancelled successfully"}),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+    } 
+    
+    catch (error) {
+        return new Response(
+            JSON.stringify({ error: "Something went wrong! Flight booking could not be cancelled!"}),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+    }
+  }
+
 // Payload for testing POST:
 // {
 //     "flightId": "bd7ee4df-004d-4c95-abda-633d276a5842",
