@@ -24,13 +24,16 @@ interface Flight {
     code: string;
     name: string;
   };
+  duration: number; // Added duration
+  status: string; // Added status
 }
 
 interface FlightListProps {
   flights: Flight[];
+  onBookFlight: (flight: Flight) => void;
 }
 
-const FlightList: React.FC<FlightListProps> = ({ flights }) => {
+const FlightList: React.FC<FlightListProps> = ({ flights, onBookFlight }) => {
   console.log("Flights received:", flights); // Check if flights are passed
   return (
     <div>
@@ -61,6 +64,18 @@ const FlightList: React.FC<FlightListProps> = ({ flights }) => {
             <p>
               <strong>Available Seats:</strong> {flight.availableSeats}
             </p>
+            <p>
+              <strong>Duration:</strong> {flight.duration} minutes
+            </p>
+            <p>
+              <strong>Status:</strong> {flight.status}
+            </p>
+            <button
+              onClick={() => onBookFlight(flight)}
+              className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md"
+            >
+              Book Flight
+            </button>
           </div>
         ))
       )}

@@ -77,41 +77,42 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-    // Extract user object from headers
-    const userHeader = request.headers.get("x-user");
+    // // UNCOMMENT THIS SECTION WHEN AUTHENTICATION IS IMPLEMENTED
+    // // Extract user object from headers
+    // const userHeader = request.headers.get("x-user");
 
-    // Check if the userHeader is missing or invalid
-    if (!userHeader) {
-        // console.log("User header is missing or empty");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Check if the userHeader is missing or invalid
+    // if (!userHeader) {
+    //     // console.log("User header is missing or empty");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    let validatedUser;
-    try {
-        validatedUser = JSON.parse(userHeader); // Try to parse the header
-        // console.log("Parsed user:", validatedUser);
-    } catch (error) {
-        // console.log("Error parsing user header:", error);
-        return new Response(
-            JSON.stringify({ error: "Invalid user data" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // let validatedUser;
+    // try {
+    //     validatedUser = JSON.parse(userHeader); // Try to parse the header
+    //     // console.log("Parsed user:", validatedUser);
+    // } catch (error) {
+    //     // console.log("Error parsing user header:", error);
+    //     return new Response(
+    //         JSON.stringify({ error: "Invalid user data" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    const userId = validatedUser.id; // Ensure ID is extracted correctly
-    // console.log("User ID:", userId);
+    // const userId = validatedUser.id; // Ensure ID is extracted correctly
+    // // console.log("User ID:", userId);
 
-    // Ensure userId is valid
-    if (!userId) {
-        // console.log("User ID is invalid");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Ensure userId is valid
+    // if (!userId) {
+    //     // console.log("User ID is invalid");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
     try {
         const body = await request.json();
@@ -138,7 +139,9 @@ export async function POST(request) {
             email
         } = body;
 
+        
         // Checks to see that the userId provided is a legitimate user
+        const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804";
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             return new Response(
@@ -220,7 +223,6 @@ export async function POST(request) {
           );
     }
 }
-
 
 
 export async function DELETE(request) {
