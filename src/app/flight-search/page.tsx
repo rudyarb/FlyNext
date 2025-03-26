@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import React from 'react';
 import FlightList from '../components/FlightSearch';
+import Link from 'next/link';
 
 interface Flight {
   id: string;
@@ -198,24 +199,25 @@ const FlightSearchPage = () => {
         <div className="mt-8">
           <h3 className="text-xl font-semibold">Start Flights</h3>
           <FlightList
-            flights={startFlights.map(flight => ({
-              ...flight,
-              id: `start-${flight.id}`,
-            }))}
-            onBookFlight={handleBookFlight} // Pass the booking handler
+            flights={startFlights}
+            onBookFlight={handleBookFlight}
           />
           <h3 className="text-xl font-semibold mt-4">Return Flights</h3>
           <FlightList
-            flights={returnFlights.map(flight => ({
-              ...flight,
-              id: `return-${flight.id}`,
-            }))}
-            onBookFlight={handleBookFlight} // Pass the booking handler
+            flights={returnFlights}
+            onBookFlight={handleBookFlight}
           />
         </div>
       ) : (
         <p className="mt-8 text-center text-gray-500">No flights found. Try a different search.</p>
       )}
+
+      {/* Fix the Link issue */}
+      <div className="mt-8 text-center">
+        <Link href="/bookings/checkout" className="text-blue-600 underline">
+          Proceed to Checkout
+        </Link>
+      </div>
     </div>
   );
 };

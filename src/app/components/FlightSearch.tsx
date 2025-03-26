@@ -6,14 +6,10 @@ interface Flight {
   departureTime: string;
   arrivalTime: string;
   origin: {
-    code: string;
-    name: string;
     city: string;
     country: string;
   };
   destination: {
-    code: string;
-    name: string;
     city: string;
     country: string;
   };
@@ -21,11 +17,10 @@ interface Flight {
   currency: string;
   availableSeats: number;
   airline: {
-    code: string;
     name: string;
   };
-  duration: number; // Added duration
-  status: string; // Added status
+  duration: number;
+  status: string;
 }
 
 interface FlightListProps {
@@ -34,7 +29,6 @@ interface FlightListProps {
 }
 
 const FlightList: React.FC<FlightListProps> = ({ flights, onBookFlight }) => {
-  console.log("Flights received:", flights); // Check if flights are passed
   return (
     <div>
       {flights.length === 0 ? (
@@ -44,7 +38,7 @@ const FlightList: React.FC<FlightListProps> = ({ flights, onBookFlight }) => {
           <div key={flight.id} className="border p-4 my-4 rounded">
             <h3 className="text-xl font-bold">{flight.flightNumber}</h3>
             <p>
-              <strong>Airline:</strong> {flight.airline.name} ({flight.airline.code})
+              <strong>Airline:</strong> {flight.airline.name}
             </p>
             <p>
               <strong>Departure:</strong> {new Date(flight.departureTime).toLocaleString()}
@@ -53,10 +47,10 @@ const FlightList: React.FC<FlightListProps> = ({ flights, onBookFlight }) => {
               <strong>Arrival:</strong> {new Date(flight.arrivalTime).toLocaleString()}
             </p>
             <p>
-              <strong>From:</strong> {flight.origin.city}, {flight.origin.country} ({flight.origin.code})
+              <strong>From:</strong> {flight.origin.city}, {flight.origin.country}
             </p>
             <p>
-              <strong>To:</strong> {flight.destination.city}, {flight.destination.country} ({flight.destination.code})
+              <strong>To:</strong> {flight.destination.city}, {flight.destination.country}
             </p>
             <p>
               <strong>Price:</strong> {flight.currency} {flight.price}

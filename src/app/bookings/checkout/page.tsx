@@ -29,7 +29,7 @@ export default function Checkout() {
     fetchDetails();
   }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCreditCard({ ...creditCard, [name]: value });
   };
@@ -39,24 +39,26 @@ export default function Checkout() {
     setError('');
 
     try {
-      // Make the POST request with mock user data
-      const response = await fetch('/api/bookings/finalize', {
+      const response = await fetch('/api/bookings/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user': JSON.stringify({ id: 123 }), // Mock user ID
+          'x-user': JSON.stringify({ id: 'be30c455-0f69-40b7-a16c-085b73075b38' }), // Replace with actual user ID
         },
         body: JSON.stringify({ creditCard }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to finalize booking');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to finalize booking');
       }
 
-      alert('Booking successful! Invoice generated.');
+      const data = await response.json();
+      console.log('Booking successful:', data);
+      alert('Booking successful! Your itinerary has been confirmed.');
       router.push('/bookings/confirmation');
     } catch (err) {
-      setError('Error finalizing booking.');
+      // setError(err.message || 'Error finalizing booking.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -72,7 +74,7 @@ export default function Checkout() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Flight Details</h2>
           <p>Flight Number: {flightDetails.flightNumber}</p>
-          <p>Airline: {flightDetails.airline}</p>
+          <p>Airline: {flightDetails.airline.name}</p>
           <p>Price: {flightDetails.price}</p>
         </div>
       )}
@@ -122,9 +124,9 @@ export default function Checkout() {
         {loading ? 'Finalizing...' : 'Finalize Booking'}
       </button>
 
-      {/* <Link href="/bookings" className="block mt-4 text-blue-600">
-        Back to Bookings
-      </Link> */}
+      <Link href="/bookings" className="block mt-4 text-blue-600">
+        All Your Bookings
+      </Link>
     </div>
   );
 }
