@@ -8,7 +8,7 @@ export default function Home() {
         {/* Replace with FlyNext logo */}
         <Image
           className="dark:invert"
-          src="/https://www.cs.toronto.edu/~kianoosh/courses/csc309h5/handouts/pp1/logo.jpg" // Make sure you have your logo here
+          src="/./logo.jpg" // Make sure you have your logo here
           alt="FlyNext Logo"
           width={180}
           height={38}
@@ -38,7 +38,7 @@ export default function Home() {
         </div>
       </main>
       
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
+      {/* <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
         <a
           className="flex items-center gap-2 hover:underline hover:underline-offset-4"
           href="/about"
@@ -55,7 +55,7 @@ export default function Home() {
         >
           Contact Us
         </a>
-      </footer>
+      </footer> */}
     </div>
   );
 }

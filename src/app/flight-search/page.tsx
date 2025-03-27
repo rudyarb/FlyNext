@@ -1,38 +1,12 @@
-'use client'; 
+'use client';
 import { useState, useEffect } from "react";
 import React from 'react';
 import FlightList from '../components/FlightSearch';
+import { Flight } from '../components/FlightSearch';
 import Link from 'next/link';
 
-interface Flight {
-  id: string;
-  flightNumber: string;
-  departureTime: string;
-  arrivalTime: string;
-  origin: {
-    code: string;
-    name: string;
-    city: string;
-    country: string;
-  };
-  destination: {
-    code: string;
-    name: string;
-    city: string;
-    country: string;
-  };
-  price: number;
-  currency: string;
-  availableSeats: number;
-  airline: {
-    code: string;
-    name: string;
-  };
-  duration: number; // Added duration
-  status: string; // Added status
-}
-
 const FlightSearchPage = () => {
+  const [isClient, setIsClient] = useState(false);
   const [source, setSource] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
@@ -40,6 +14,15 @@ const FlightSearchPage = () => {
   const [startFlights, setStartFlights] = useState<Flight[]>([]);
   const [returnFlights, setReturnFlights] = useState<Flight[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true); // Ensure rendering happens only on the client
+    setIsLoaded(true); // Mark the component as loaded
+  }, []);
+
+  if (!isClient) {
+    return null; // Prevent rendering on the server
+  }
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +36,15 @@ const FlightSearchPage = () => {
 
     try {
       const response = await fetch(`/api/flight-search?${query}`);
+
       if (!response.ok) {
-        throw new Error(`API returned status ${response.status}`);
+        const data = await response.json();
+        alert(`Error: ${data.message || "Failed to fetch flights."}`);
+        return;
       }
 
       const data = await response.json();
+
       console.log("Flight data:", data);
 
       // Separate setting of start and return flights with unique keys
@@ -91,7 +78,7 @@ const FlightSearchPage = () => {
 
   const handleBookFlight = async (flight: Flight) => {
     try {
-      const response = await fetch('/api/flight-search', {
+      const response = await fetch('/api/flight-booking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,10 +120,6 @@ const FlightSearchPage = () => {
       alert("Failed to book flight. Please try again.");
     }
   };
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
 
   return (
     <div className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-md">

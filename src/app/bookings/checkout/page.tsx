@@ -5,23 +5,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Checkout() {
-  const [flightDetails, setFlightDetails] = useState<any>(null);
-  const [hotelDetails, setHotelDetails] = useState<any>(null);
+  const [flightBookings, setFlightBookings] = useState<any[]>([]);
+  const [hotelBookings, setHotelBookings] = useState<any[]>([]);
   const [creditCard, setCreditCard] = useState({ number: '', expiryMonth: '', expiryYear: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Fetch selected flight and hotel details
+    // Fetch all flight and hotel bookings
     const fetchDetails = async () => {
       try {
-        const flightRes = await fetch('/api/bookings/flight-details');
-        const hotelRes = await fetch('/api/bookings/hotel-details');
+        const flightRes = await fetch('/api/flight-booking');
+        const hotelRes = await fetch('/api/hotel-booking');
         const flightData = await flightRes.json();
         const hotelData = await hotelRes.json();
-        setFlightDetails(flightData);
-        setHotelDetails(hotelData);
+        setFlightBookings(flightData);
+        setHotelBookings(hotelData);
       } catch (err) {
         setError('Failed to load booking details.');
       }
@@ -37,13 +38,14 @@ export default function Checkout() {
   const finalizeBooking = async () => {
     setLoading(true);
     setError('');
+    setBookingSuccess(false);
 
     try {
       const response = await fetch('/api/bookings/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user': JSON.stringify({ id: 'be30c455-0f69-40b7-a16c-085b73075b38' }), // Replace with actual user ID
+          'x-user': JSON.stringify({ id: '2e51126c-b69c-4fc8-8b82-e94e87ac7804' }), // Replace with actual user ID
         },
         body: JSON.stringify({ creditCard }),
       });
@@ -55,11 +57,10 @@ export default function Checkout() {
 
       const data = await response.json();
       console.log('Booking successful:', data);
-      alert('Booking successful! Your itinerary has been confirmed.');
-      router.push('/bookings/confirmation');
+      setBookingSuccess(true);
     } catch (err) {
-      // setError(err.message || 'Error finalizing booking.');
       console.error(err);
+      setError('Failed to finalize booking. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -70,21 +71,42 @@ export default function Checkout() {
       <h1 className="text-2xl font-bold mb-4">Checkout Page</h1>
       {error && <p className="text-red-500">{error}</p>}
 
-      {flightDetails && (
+      {flightBookings.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">Flight Details</h2>
-          <p>Flight Number: {flightDetails.flightNumber}</p>
-          <p>Airline: {flightDetails.airline.name}</p>
-          <p>Price: {flightDetails.price}</p>
+          <h2 className="text-xl font-semibold">Flight Bookings</h2>
+          {flightBookings.map((flight, index) => (
+            <div key={index} className="border p-2 mb-2">
+              <p>Flight Number: {flight.flightNumber}</p>
+              <p>Departure Time: {flight.departureTime}</p>
+              <p>Origin Code: {flight.originCode}</p>
+              <p>Origin Name: {flight.originName}</p>
+              <p>Origin City: {flight.originCity}</p>
+              <p>Origin Country: {flight.originCountry}</p>
+              <p>Arrival Time: {flight.arrivalTime}</p>
+              <p>Destination Code: {flight.destinationCode}</p>
+              <p>Destination Name: {flight.destinationName}</p>
+              <p>Destination City: {flight.destinationCity}</p>
+              <p>Destination Country: {flight.destinationCountry}</p>
+              <p>Duration: {flight.duration} minutes</p>
+              <p>Price: {flight.price} {flight.currency}</p>
+              <p>Available Seats: {flight.availableSeats}</p>
+              <p>Status: {flight.status}</p>
+              <p>Airline: {flight.airlineName || 'N/A'}</p>
+            </div>
+          ))}
         </div>
       )}
 
-      {hotelDetails && (
+      {hotelBookings.length > 0 && (
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">Hotel Details</h2>
-          <p>Hotel Name: {hotelDetails.name}</p>
-          <p>Location: {hotelDetails.location}</p>
-          <p>Price per night: {hotelDetails.pricePerNight}</p>
+          <h2 className="text-xl font-semibold">Hotel Bookings</h2>
+          {hotelBookings.map((hotel, index) => (
+            <div key={index} className="border p-2 mb-2">
+              <p>Hotel Name: {hotel.name}</p>
+              <p>Location: {hotel.location}</p>
+              <p>Price per night: {hotel.pricePerNight}</p>
+            </div>
+          ))}
         </div>
       )}
 
@@ -119,10 +141,16 @@ export default function Checkout() {
       <button
         onClick={finalizeBooking}
         className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        disabled={loading}
+        disabled={loading || bookingSuccess}
       >
-        {loading ? 'Finalizing...' : 'Finalize Booking'}
+        {loading ? 'Finalizing...' : bookingSuccess ? 'Booking Successful' : 'Finalize Booking'}
       </button>
+
+      {bookingSuccess && (
+        <p className="text-green-500 mt-4">
+          Your booking has been placed successfully! Please go to "All Your Bookings" to see it!
+        </p>
+      )}
 
       <Link href="/bookings" className="block mt-4 text-blue-600">
         All Your Bookings

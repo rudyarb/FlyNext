@@ -1,15 +1,19 @@
 import React from 'react';
 
-interface Flight {
+export interface Flight {
   id: string;
   flightNumber: string;
   departureTime: string;
   arrivalTime: string;
   origin: {
+    code: string;
+    name: string;
     city: string;
     country: string;
   };
   destination: {
+    code: string;
+    name: string;
     city: string;
     country: string;
   };
@@ -17,10 +21,11 @@ interface Flight {
   currency: string;
   availableSeats: number;
   airline: {
+    code: string;
     name: string;
   };
-  duration: number;
-  status: string;
+  duration: number; // Added duration
+  status: string; // Added status
 }
 
 interface FlightListProps {
