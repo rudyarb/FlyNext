@@ -3,43 +3,45 @@ const prisma = new PrismaClient();
 import { getAFSFlights } from "@utils/helpers";
 
 export async function GET(request) {
-    // Extract user object from headers
-    const userHeader = request.headers.get("x-user");
+    // UNCOMMENT WHEN DO AUTHORIZATION
+    // // Extract user object from headers
+    // const userHeader = request.headers.get("x-user");
 
-    // Check if the userHeader is missing or invalid
-    if (!userHeader) {
-        console.log("User header is missing or empty");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Check if the userHeader is missing or invalid
+    // if (!userHeader) {
+    //     console.log("User header is missing or empty");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    let validatedUser;
-    try {
-        validatedUser = JSON.parse(userHeader); // Try to parse the header
-        // console.log("Parsed user:", validatedUser);
-    } catch (error) {
-        // console.log("Error parsing user header:", error);
-        return new Response(
-            JSON.stringify({ error: "Invalid user data" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // let validatedUser;
+    // try {
+    //     validatedUser = JSON.parse(userHeader); // Try to parse the header
+    //     // console.log("Parsed user:", validatedUser);
+    // } catch (error) {
+    //     // console.log("Error parsing user header:", error);
+    //     return new Response(
+    //         JSON.stringify({ error: "Invalid user data" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    const userId = validatedUser.id; // Ensure ID is extracted correctly
-    // console.log("User ID:", userId);
+    // const userId = validatedUser.id; // Ensure ID is extracted correctly
+    // // console.log("User ID:", userId);
 
-    // Ensure userId is valid
-    if (!userId) {
-        // console.log("User ID is invalid");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Ensure userId is valid
+    // if (!userId) {
+    //     // console.log("User ID is invalid");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
     
     try {
+        const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804";
         const url = new URL(request.url);
         const flightBookingId = url.searchParams.get('flightBookingId');
 
@@ -66,12 +68,12 @@ export async function GET(request) {
         // In the clear, the correct user is seeing this info
         // Get the current AFS status for this flight
         const flightResults = await getAFSFlights(flightBooking.originCity, flightBooking.destinationCity, flightBooking.departureTime.split('T')[0]);
-        
+
         // Loop through flightResults to find flight matching flightBooking's flightId
         let flightScheduled = false;
         flightResults.results.forEach(result => {
             result.flights.forEach(flight => {
-              if (flight.id == flightBooking.flightId) {
+              if (flightBooking.flightId.includes(flight.id)) {
                 if (flight.status = "SCHEDULED") {
                     flightScheduled = true;
                 }

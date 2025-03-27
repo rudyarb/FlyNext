@@ -90,7 +90,7 @@ model FlightBooking {
   userId             String
   user               User       @relation(fields: [userId], references: [id])
   passportNumber  String
-  email String  @unique
+  email String  
 }
 
 model Hotel {

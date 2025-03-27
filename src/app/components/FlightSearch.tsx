@@ -28,6 +28,34 @@ export interface Flight {
   status: string; // Added status
 }
 
+export interface FlightBooking {
+  id: string;
+  flightId: string;
+  flightNumber: string;
+  departureTime: string;
+  originCode: string;
+  originName: string;
+  originCity: string;
+  originCountry: string;
+  arrivalTime: string;
+  destinationCode: string;
+  destinationName: string;
+  destinationCity: string;
+  destinationCountry: string;
+  duration: number;
+  price: number;
+  currency: string;
+  availableSeats: number;
+  status: string;
+  airlineName: string | null;
+}
+
+export interface HotelBooking {
+  name: string;
+  location: string;
+  pricePerNight: number;
+}
+
 interface FlightListProps {
   flights: Flight[];
   onBookFlight: (flight: Flight) => void;

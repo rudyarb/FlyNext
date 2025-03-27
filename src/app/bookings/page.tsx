@@ -1,116 +1,140 @@
-'use client';
+"use client"
 
-import React, { useEffect, useState } from 'react';
-
-interface Flight {
-  id: string;
-  flightNumber: string;
-  departureTime: string;
-  arrivalTime: string;
-  origin: {
-    city: string;
-    country: string;
-  };
-  destination: {
-    city: string;
-    country: string;
-  };
-}
-
-interface Hotel {
-  id: string;
-  name: string;
-  location: string;
-  checkInDate: string;
-  checkOutDate: string;
-}
-
-interface Booking {
-  id: string;
-  status: string;
-  itinerary: {
-    flights: Flight[];
-    hotels: Hotel[];
-  };
-}
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter for navigation
+import { FlightBooking, HotelBooking } from "../components/FlightSearch"
 
 export default function BookingsPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [error, setError] = useState<string>('');
+    const [bookings, setBookings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter(); // Initialize useRouter
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await fetch('/api/bookings', {
-          headers: {
-            'x-user': JSON.stringify({ id: 'be30c455-0f69-40b7-a16c-085b73075b38' }), // Replace with actual user ID
-          },
-        });
+    const verifyFlight = async (flightBookingId: string) => {
+        try {
+            const response = await fetch(`/api/bookings/verify-flight?flightBookingId=${flightBookingId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                }
+            });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch bookings');
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+            } else {
+                alert(data.error || "Failed to verify flight.");
+            }
+        } catch (error) {
+            console.error("Error verifying flight:", error);
+            alert("An error occurred while verifying the flight.");
         }
-
-        const data = await response.json();
-        setBookings(data);
-      } catch (err) {
-        // setError(err.message || 'Error fetching bookings.');
-        console.error(err);
-      }
     };
 
-    fetchBookings();
-  }, []);
+    useEffect(() => {
+        async function fetchBookings() {
+            try {
+                const response = await fetch("/api/bookings");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch bookings");
+                }
+                const bookingsData = await response.json();
+                setBookings(bookingsData);
+            } catch (error) {
+                console.error("Error fetching bookings:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
 
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Your Bookings</h1>
-      {error && <p className="text-red-500">{error}</p>}
+        fetchBookings();
+    }, []);
 
-      {bookings.length === 0 && !error ? (
-        <p className="text-gray-500">No bookings found.</p>
-      ) : (
-        bookings.map((booking) => (
-          <div key={booking.id} className="border p-4 mb-4 rounded shadow">
-            <h2 className="text-xl font-semibold">Booking ID: {booking.id}</h2>
-            <p>Status: {booking.status}</p>
+    if (loading) {
+        return <p>Loading bookings...</p>;
+    }
 
-            {booking.itinerary.flights.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold">Flights</h3>
-                {booking.itinerary.flights.map((flight) => (
-                  <div key={flight.id} className="border p-2 mb-2 rounded">
-                    <p>Flight Number: {flight.flightNumber}</p>
-                    <p>
-                      From: {flight.origin.city}, {flight.origin.country}
-                    </p>
-                    <p>
-                      To: {flight.destination.city}, {flight.destination.country}
-                    </p>
-                    <p>Departure: {new Date(flight.departureTime).toLocaleString()}</p>
-                    <p>Arrival: {new Date(flight.arrivalTime).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
+    return (
+        <div className="flex flex-col items-center">
+            <h1 className="text-2xl font-bold mb-4">Your Bookings</h1>
+
+            <button
+                onClick={() => router.push("/")}
+                className="mb-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+            >
+                Go Back to Home
+            </button>
+
+            {bookings.length > 0 ? (
+                bookings.map((booking, bookingIndex) => (
+                    <div key={bookingIndex} className="mb-6 border p-4 w-full max-w-3xl">
+                        <h2 className="text-xl font-semibold mb-2">
+                            Booking ID: {booking.id || "N/A"}
+                        </h2>
+
+                        {booking.itinerary?.flights?.length > 0 && (
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold">Flight Bookings</h3>
+                                {booking.itinerary.flights.map((flightBooking: FlightBooking, index: number) => (
+                                    <div key={index} className="border p-2 mb-2">
+                                        <p>Flight Number: {flightBooking.flightNumber}</p>
+                                        <p>Departure Time: {flightBooking.departureTime}</p>
+                                        <p>Origin Code: {flightBooking.originCode}</p>
+                                        <p>Origin Name: {flightBooking.originName}</p>
+                                        <p>Origin City: {flightBooking.originCity}</p>
+                                        <p>Origin Country: {flightBooking.originCountry}</p>
+                                        <p>Arrival Time: {flightBooking.arrivalTime}</p>
+                                        <p>Destination Code: {flightBooking.destinationCode}</p>
+                                        <p>Destination Name: {flightBooking.destinationName}</p>
+                                        <p>Destination City: {flightBooking.destinationCity}</p>
+                                        <p>Destination Country: {flightBooking.destinationCountry}</p>
+                                        <p>Duration: {flightBooking.duration} minutes</p>
+                                        <p>Price: {flightBooking.price} {flightBooking.currency}</p>
+                                        <p>Available Seats: {flightBooking.availableSeats}</p>
+                                        <p>Status: {flightBooking.status}</p>
+                                        <p>Airline: {flightBooking.airlineName || 'N/A'}</p>
+
+                                        {/* Add Verify Flight button */}
+                                        <button
+                                            onClick={() => verifyFlight(flightBooking.id)}
+                                            className="mt-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-75"
+                                        >
+                                            Verify Flight
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {booking.itinerary?.hotels?.length > 0 && (
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold">Hotel Bookings</h3>
+                                {booking.itinerary.hotels.map((hotelBooking: HotelBooking, index: number) => (
+                                    <div key={index} className="border p-2 mb-2">
+                                        <p>Hotel Name: {hotelBooking.name}</p>
+                                        <p>Location: {hotelBooking.location}</p>
+                                        <p>Price per night: {hotelBooking.pricePerNight}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {(!booking.itinerary?.flights?.length && !booking.itinerary?.hotels?.length) && (
+                            <p>No bookings found for this itinerary.</p>
+                        )}
+
+                        <button
+                            onClick={() => router.push("/flight-search")}
+                            className="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
+                        >
+                            Modify
+                        </button>
+                    </div>
+                ))
+            ) : (
+                <p>No bookings found.</p>
             )}
-
-            {booking.itinerary.hotels.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-semibold">Hotels</h3>
-                {booking.itinerary.hotels.map((hotel) => (
-                  <div key={hotel.id} className="border p-2 mb-2 rounded">
-                    <p>Hotel Name: {hotel.name}</p>
-                    <p>Location: {hotel.location}</p>
-                    <p>Check-In: {new Date(hotel.checkInDate).toLocaleDateString()}</p>
-                    <p>Check-Out: {new Date(hotel.checkOutDate).toLocaleDateString()}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))
-      )}
-    </div>
-  );
+        </div>
+    );
 }

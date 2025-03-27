@@ -8,7 +8,7 @@ export default function Home() {
         {/* Replace with FlyNext logo */}
         <Image
           className="dark:invert"
-          src="/./logo.jpg" // Make sure you have your logo here
+          src="/logo.jpg" // Make sure you have your logo here
           alt="FlyNext Logo"
           width={180}
           height={38}
