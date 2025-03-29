@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter for navigation
-import { FlightBooking, HotelBooking } from "../components/FlightSearch"
+import { FlightBooking, HotelBooking } from "../components/FlightSearch";
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -29,6 +29,83 @@ export default function BookingsPage() {
         } catch (error) {
             console.error("Error verifying flight:", error);
             alert("An error occurred while verifying the flight.");
+        }
+    };
+
+    const deleteFlight = async (flightBookingId: string) => {
+        try {
+            const response = await fetch(`/api/flight-booking`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                },
+                body: JSON.stringify({ flightBookingId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+                window.location.reload(); // Reload the bookings page
+            } else {
+                alert(data.error || "Failed to delete flight booking.");
+            }
+        } catch (error) {
+            console.error("Error deleting flight booking:", error);
+            alert("An error occurred while deleting the flight booking.");
+        }
+    };
+
+    const deleteBooking = async (bookingId: string) => {
+        try {
+            const response = await fetch(`/api/bookings`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                },
+                body: JSON.stringify({ bookingId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+                window.location.reload(); // Reload the bookings page
+            } else {
+                alert(data.error || "Failed to delete booking.");
+            }
+        } catch (error) {
+            console.error("Error deleting booking:", error);
+            alert("An error occurred while deleting the booking.");
+        }
+    };
+
+    const generateInvoice = async (bookingId: string) => {
+        try {
+            const response = await fetch(`/api/bookings/invoice?bookingId=${bookingId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `booking_${bookingId}.pdf`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                alert("Failed to generate invoice.");
+            }
+        } catch (error) {
+            console.error("Error generating invoice:", error);
+            alert("An error occurred while generating the invoice.");
         }
     };
 
@@ -95,12 +172,18 @@ export default function BookingsPage() {
                                         <p>Status: {flightBooking.status}</p>
                                         <p>Airline: {flightBooking.airlineName || 'N/A'}</p>
 
-                                        {/* Add Verify Flight button */}
                                         <button
                                             onClick={() => verifyFlight(flightBooking.id)}
                                             className="mt-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-75"
                                         >
                                             Verify Flight
+                                        </button>
+
+                                        <button
+                                            onClick={() => deleteFlight(flightBooking.id)}
+                                            className="mt-2 ml-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75"
+                                        >
+                                            Delete Flight
                                         </button>
                                     </div>
                                 ))}
@@ -121,14 +204,28 @@ export default function BookingsPage() {
                         )}
 
                         {(!booking.itinerary?.flights?.length && !booking.itinerary?.hotels?.length) && (
-                            <p>No bookings found for this itinerary.</p>
+                            <p>No itinerary was found for this booking.</p>
                         )}
 
                         <button
-                            onClick={() => router.push("/flight-search")}
-                            className="mt-4 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
+                            onClick={() => generateInvoice(booking.id)}
+                            className="mt-4 mr-2 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-75"
                         >
-                            Modify
+                            Generate Invoice for Booking
+                        </button>
+
+                        <button
+                            onClick={() => router.push("/flight-search")}
+                            className="mt-4 ml-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
+                        >
+                            Modify Booking
+                        </button>
+
+                        <button
+                            onClick={() => deleteBooking(booking.id)}
+                            className="mt-4 ml-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75"
+                        >
+                            Delete Booking
                         </button>
                     </div>
                 ))

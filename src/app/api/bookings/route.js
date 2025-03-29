@@ -73,3 +73,26 @@ export async function GET(request) {
       });
     }
 }
+
+export async function DELETE(request) {
+    try {
+        const { bookingId } = await request.json();
+
+        // Also delete from our DB
+        await prisma.booking.delete({
+            where: { id: bookingId }
+          });
+
+        return new Response(
+            JSON.stringify({ message: "The booking was deleted"}),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+    } 
+    
+    catch (error) {
+        return new Response(
+            JSON.stringify({ error: "Something went wrong! Booking could not be deleted!"}),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+    }
+  }
