@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { verifyHotelOwner } from "@/middleware/ownerAuth";
 
+// TODO: for editing/updating/deleting hotels
+
 export async function PUT(
     request: NextRequest,
     { params }: { params: { id: string } }
-) {
+): Promise<NextResponse> {
     const auth = await verifyHotelOwner(request, params.id);
-    if ('error' in auth) return auth.error;
+    if ('error' in auth) return auth.error as NextResponse;
 
     // Proceed with hotel update logic
     try {
@@ -29,9 +31,9 @@ export async function PUT(
 export async function DELETE(
     request: NextRequest,
     { params }: { params: { id: string } }
-) {
+): Promise<NextResponse> {
     const auth = await verifyHotelOwner(request, params.id);
-    if ('error' in auth) return auth.error;
+    if ('error' in auth) return auth.error as NextResponse;
 
     // Proceed with hotel deletion logic
     try {
