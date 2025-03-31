@@ -122,57 +122,57 @@ const FlightSearchPage = () => {
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-md">
-      <h2 className="text-2xl font-semibold mb-4">Flight Search</h2>
+    <div className="p-4 max-w-xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-md">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Flight Search</h2>
       <form onSubmit={handleSearch} className="space-y-4">
         <div>
-          <label htmlFor="source" className="block text-sm font-medium">Source</label>
+          <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Source</label>
           <input
             type="text"
             id="source"
             value={source}
             onChange={(e) => setSource(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="Enter source"
           />
         </div>
         <div>
-          <label htmlFor="destination" className="block text-sm font-medium">Destination</label>
+          <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Destination</label>
           <input
             type="text"
             id="destination"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="Enter destination"
           />
         </div>
         <div>
-          <label htmlFor="startDate" className="block text-sm font-medium">Departure Date</label>
+          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Departure Date</label>
           <input
             type="date"
             id="startDate"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
         <div>
-          <label htmlFor="returnDate" className="block text-sm font-medium">Return Date</label>
+          <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Return Date</label>
           <input
             type="date"
             id="returnDate"
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
-            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
         </div>
         <button
           type="submit"
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md w-full"
+          className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md w-full hover:bg-blue-700 dark:hover:bg-blue-600"
         >
           Search Flights
         </button>
@@ -180,24 +180,23 @@ const FlightSearchPage = () => {
 
       {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
         <div className="mt-8">
-          <h3 className="text-xl font-semibold">Start Flights</h3>
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Start Flights</h3>
           <FlightList
             flights={startFlights}
             onBookFlight={handleBookFlight}
           />
-          <h3 className="text-xl font-semibold mt-4">Return Flights</h3>
+          <h3 className="text-xl font-semibold mt-4 text-gray-800 dark:text-white">Return Flights</h3>
           <FlightList
             flights={returnFlights}
             onBookFlight={handleBookFlight}
           />
         </div>
       ) : (
-        <p className="mt-8 text-center text-gray-500">No flights found. Try a different search.</p>
+        <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
       )}
 
-      {/* Fix the Link issue */}
       <div className="mt-8 text-center">
-        <Link href="/bookings/checkout" className="text-blue-600 underline">
+        <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
           Proceed to Checkout
         </Link>
       </div>

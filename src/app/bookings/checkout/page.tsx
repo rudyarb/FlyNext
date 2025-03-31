@@ -67,7 +67,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 text-gray-800 dark:text-white">
       <h1 className="text-2xl font-bold mb-4">Checkout Page</h1>
       {error && <p className="text-red-500">{error}</p>}
 
@@ -75,7 +75,7 @@ export default function Checkout() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Flight Bookings</h2>
           {flightBookings.map((flight, index) => (
-            <div key={index} className="border p-2 mb-2">
+            <div key={index} className="border border-gray-200 dark:border-gray-700 p-2 mb-2 bg-white dark:bg-gray-800">
               <p>Flight Number: {flight.flightNumber}</p>
               <p>Departure Time: {flight.departureTime}</p>
               <p>Origin Code: {flight.originCode}</p>
@@ -101,7 +101,7 @@ export default function Checkout() {
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Hotel Bookings</h2>
           {hotelBookings.map((hotel, index) => (
-            <div key={index} className="border p-2 mb-2">
+            <div key={index} className="border border-gray-200 dark:border-gray-700 p-2 mb-2 bg-white dark:bg-gray-800">
               <p>Hotel Name: {hotel.name}</p>
               <p>Location: {hotel.location}</p>
               <p>Price per night: {hotel.pricePerNight}</p>
@@ -118,7 +118,7 @@ export default function Checkout() {
           value={creditCard.number}
           onChange={handleInputChange}
           placeholder="Card Number"
-          className="border p-2 mb-2 block w-full"
+          className="border border-gray-200 dark:border-gray-700 p-2 mb-2 block w-full bg-white dark:bg-gray-800"
         />
         <input
           type="text"
@@ -126,7 +126,7 @@ export default function Checkout() {
           value={creditCard.expiryMonth}
           onChange={handleInputChange}
           placeholder="Expiry Month"
-          className="border p-2 mb-2 block w-full"
+          className="border border-gray-200 dark:border-gray-700 p-2 mb-2 block w-full bg-white dark:bg-gray-800"
         />
         <input
           type="text"
@@ -134,13 +134,13 @@ export default function Checkout() {
           value={creditCard.expiryYear}
           onChange={handleInputChange}
           placeholder="Expiry Year"
-          className="border p-2 mb-2 block w-full"
+          className="border border-gray-200 dark:border-gray-700 p-2 mb-2 block w-full bg-white dark:bg-gray-800"
         />
       </div>
 
       <button
         onClick={finalizeBooking}
-        className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
         disabled={loading || bookingSuccess}
       >
         {loading ? 'Finalizing...' : bookingSuccess ? 'Booking Successful' : 'Finalize Booking'}
@@ -152,7 +152,7 @@ export default function Checkout() {
         </p>
       )}
 
-      <Link href="/bookings" className="block mt-4 text-blue-600">
+      <Link href="/bookings" className="block mt-4 text-blue-600 dark:text-blue-400 hover:underline">
         All Your Bookings
       </Link>
     </div>
