@@ -133,19 +133,19 @@ export default function BookingsPage() {
     }
 
     return (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center text-gray-800 dark:text-white">
             <h1 className="text-2xl font-bold mb-4">Your Bookings</h1>
 
             <button
                 onClick={() => router.push("/")}
-                className="mb-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+                className="mb-6 px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
             >
                 Go Back to Home
             </button>
 
             {bookings.length > 0 ? (
                 bookings.map((booking, bookingIndex) => (
-                    <div key={bookingIndex} className="mb-6 border p-4 w-full max-w-3xl">
+                    <div key={bookingIndex} className="mb-6 border border-gray-200 dark:border-gray-700 p-4 w-full max-w-3xl bg-white dark:bg-gray-800">
                         <h2 className="text-xl font-semibold mb-2">
                             Booking ID: {booking.id || "N/A"}
                         </h2>
@@ -174,7 +174,7 @@ export default function BookingsPage() {
 
                                         <button
                                             onClick={() => verifyFlight(flightBooking.id)}
-                                            className="mt-2 px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-75"
+                                            className="mt-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 dark:hover:bg-yellow-600"
                                         >
                                             Verify Flight
                                         </button>
@@ -230,7 +230,7 @@ export default function BookingsPage() {
                     </div>
                 ))
             ) : (
-                <p>No bookings found.</p>
+                <p className="text-gray-600 dark:text-gray-300">No bookings found.</p>
             )}
         </div>
     );
