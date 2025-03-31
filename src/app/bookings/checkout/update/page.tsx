@@ -82,7 +82,7 @@ export default function CheckoutUpdate() {
       setBookingSuccess(true);
     } catch (err) {
       console.error(err);
-      setError(err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
       setLoading(false);
     }

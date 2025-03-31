@@ -42,99 +42,93 @@ export async function PUT(request, { params }) {
 
     try {   
       // delete after doing auth
-        const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804";
+      const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804";
 
-        const { id: bookingId } = await params;
-        const body = await request.json();
-        const { creditCard } = body;
-    
-        if (validateCreditCard(creditCard.number, creditCard.expiryMonth, creditCard.expiryYear)) {
+      const { id: bookingId } = params;
+      const body = await request.json();
+      const { creditCard } = body;
+
+      if (validateCreditCard(creditCard.number, creditCard.expiryMonth, creditCard.expiryYear)) {
 
           // Find the itinerary associated with this booking
           const itineraryToUpdate = await prisma.itinerary.findUnique({
-            where: { bookingId: bookingId }, // Ensure itinerary for this specific booking
-            include: { flights: true, hotels: true }
+              where: { bookingId: bookingId },
+              include: { flights: true, hotels: true }
           });
 
-          // // Clear itinerary of all of existing flights and hotels (need to do)
-          // await prisma.flightBooking.deleteMany({
-          //   where: { 
-          //     userId: userId,
-          //     itineraryId: itineraryToUpdate.id
-          //   }
-          // });
+          if (!itineraryToUpdate) {
+              return new Response(
+                  JSON.stringify({ error: "Itinerary not found for this booking" }),
+                  { status: 404, headers: { "Content-Type": "application/json" } }
+              );
+          }
 
-          // await prisma.hotelBooking.deleteMany({
-          //   where: { 
-          //     userId: userId,
-          //     itineraryId: itineraryToUpdate.id 
-          //   }
-          // });
-
-          // Get updated flights and hotel bookings (will have null itinerary bc not associated with one yet)
+          // Get new flight bookings (not yet linked to an itinerary)
           const updatedFlightBookings = await prisma.flightBooking.findMany({
-            where: {
-              userId: userId,
-              itineraryId: null, // itinerary is not set
-            },
+              where: {
+                  userId: userId,
+                  itineraryId: null, // Not yet associated with an itinerary
+              },
+              select: { id: true } // Only select IDs
           });
 
-          // const updatedHotelBookings = await prisma.hotelBooking.findMany({
-          //     where: {
-          //       userId: userId,
-          //       itineraryId: null, // itinerary is not set
-          //     },
-          // });
+          // Get new hotel bookings (not yet linked to an itinerary)
+          const updatedHotelBookings = await prisma.hotelBooking.findMany({
+              where: {
+                  userId: userId,
+                  itineraryId: null, // Not yet associated with an itinerary
+              },
+              select: { id: true } // Only select IDs
+          });
 
           const updatedData = {};
-          if (updatedFlightBookings) {
-            updatedData.flights = { set: updatedFlightBookings };
+          if (updatedFlightBookings.length > 0) {
+              updatedData.flights = { connect: updatedFlightBookings };
           }
-          // if (updatedHotelBookings) {
-          //   updatedData.hotels = { set: updatedHotelBookings };
-          // }
-          
-          // Update itinerary with new details
+          if (updatedHotelBookings.length > 0) {
+              updatedData.hotels = { connect: updatedHotelBookings };
+          }
+
+          // Update itinerary with new flight/hotel bookings
           await prisma.itinerary.update({
-            where: { id: itineraryToUpdate.id },
-            data: updatedData,
-            include: {
-              flights: true,
-              hotels: true,
-            }
+              where: { id: itineraryToUpdate.id },
+              data: updatedData,
+              include: {
+                  flights: true,
+                  hotels: true,
+              }
           });
 
-          // Find booking with updated itinerary to return
+          // Fetch updated booking with itinerary
           const booking = await prisma.booking.findUnique({
-            where: { id: bookingId }, // Find the booking by ID
-            include: {
-              itinerary: {
-                include: {
-                  flights: true, // Include flights within itinerary
-                  hotels: true,  // Include hotels within itinerary
-                },
+              where: { id: bookingId },
+              include: {
+                  itinerary: {
+                      include: {
+                          flights: true,
+                          hotels: true,
+                      },
+                  }
               }
-            }
           });
 
           return new Response(
               JSON.stringify(booking),
               { status: 201, headers: { "Content-Type": "application/json" } }
-              );
-        }
-        else {
-          return new Response({message: "Credit card details invalid"}, {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-            });
-        }
-    }
-    catch (error) {
-      return new Response(
-          JSON.stringify({error: "Booking was not found from <id>"}),
-          { status: 404, headers: { "Content-Type": "application/json" } }
           );
-    }   
+      } else {
+          return new Response(
+              JSON.stringify({ message: "Credit card details invalid" }),
+              { status: 400, headers: { "Content-Type": "application/json" } }
+          );
+      }
+  } 
+  catch (error) {
+      return new Response(
+          JSON.stringify({ error: "Booking was not found from <id>" }),
+          { status: 404, headers: { "Content-Type": "application/json" } }
+      );
+  }
 }
 
 // Payload for testing:
