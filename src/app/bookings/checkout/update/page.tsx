@@ -14,6 +14,7 @@ export default function CheckoutUpdate() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
+  const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
     if (!bookingId) {
@@ -24,8 +25,22 @@ export default function CheckoutUpdate() {
     // Fetch all flight and hotel bookings
     const fetchDetails = async () => {
       try {
-        const flightRes = await fetch('/api/flight-booking');
-        const hotelRes = await fetch('/api/hotel-booking');
+        const flightRes = await fetch('/api/flight-booking', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
+            }
+          }
+        );
+        const hotelRes = await fetch('/api/hotel-booking', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
+            }
+          }
+        );
         const flightData = await flightRes.json();
         const hotelData = await hotelRes.json();
         setFlightBookings(flightData);
@@ -43,6 +58,11 @@ export default function CheckoutUpdate() {
   };
 
   const updateBooking = async () => {
+    if (!token) {
+      console.log("No token found. Please log in.");
+      return;
+    }
+
     if (!bookingId) {
       setError('Booking ID is missing. Cannot update booking.');
       return;
@@ -57,7 +77,7 @@ export default function CheckoutUpdate() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user': JSON.stringify({ id: bookingId }), // Replace with actual user ID
+          'Authorization': `Bearer ${token}` // Replace with actual user ID
         },
         body: JSON.stringify({ creditCard }),
       });

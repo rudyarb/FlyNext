@@ -12,13 +12,29 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const router = useRouter();
+  const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
     // Fetch all flight and hotel bookings
     const fetchDetails = async () => {
       try {
-        const flightRes = await fetch('/api/flight-booking');
-        const hotelRes = await fetch('/api/hotel-booking');
+        // console.log(token);
+        const flightRes = await fetch('/api/flight-booking', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
+            }
+          }
+        );
+        const hotelRes = await fetch('/api/hotel-booking', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
+            }
+          }
+        );
         const flightData = await flightRes.json();
         const hotelData = await hotelRes.json();
         setFlightBookings(flightData);
@@ -36,6 +52,11 @@ export default function Checkout() {
   };
 
   const finalizeBooking = async () => {
+    if (!token) {
+      console.log("No token found. Please log in.");
+      return;
+    }
+
     setLoading(true);
     setError('');
     setBookingSuccess(false);
@@ -45,7 +66,7 @@ export default function Checkout() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user': JSON.stringify({ id: '2e51126c-b69c-4fc8-8b82-e94e87ac7804' }), // Replace with actual user ID
+          'Authorization': `Bearer ${token}` // Replace with actual user ID
         },
         body: JSON.stringify({ creditCard }),
       });

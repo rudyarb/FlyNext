@@ -17,6 +17,7 @@ const FlightSearchUpdatePage = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
+  const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
     setIsClient(true); // Ensure rendering happens only on the client
@@ -80,12 +81,17 @@ const FlightSearchUpdatePage = () => {
   };
 
   const handleBookFlight = async (flight: Flight) => {
+    if (!token) {
+      console.log("No token found. Please log in.");
+      return;
+    }
+
     try {
       const response = await fetch('/api/flight-booking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user': JSON.stringify({ id: "be30c455-0f69-40b7-a16c-085b73075b38" }), // Replace with actual user ID (after authentication)
+          'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
         },
         body: JSON.stringify({
           flightId: flight.id,

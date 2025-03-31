@@ -8,14 +8,20 @@ export default function BookingsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter(); // Initialize useRouter
+    const token = localStorage.getItem("token"); // Get the token from local storage
 
     const verifyFlight = async (flightBookingId: string) => {
+        if (!token) {
+            console.log("No token found. Please log in.");
+            return;
+          }
+
         try {
             const response = await fetch(`/api/bookings/verify-flight?flightBookingId=${flightBookingId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                    'Authorization': `Bearer ${token}` // Replace with actual user ID
                 }
             });
 
@@ -33,12 +39,17 @@ export default function BookingsPage() {
     };
 
     const deleteFlight = async (flightBookingId: string) => {
+        if (!token) {
+            console.log("No token found. Please log in.");
+            return;
+          }
+
         try {
             const response = await fetch(`/api/flight-booking`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                    'Authorization': `Bearer ${token}` // Replace with actual user ID
                 },
                 body: JSON.stringify({ flightBookingId })
             });
@@ -58,12 +69,17 @@ export default function BookingsPage() {
     };
 
     const deleteBooking = async (bookingId: string) => {
+        if (!token) {
+            console.log("No token found. Please log in.");
+            return;
+          }
+
         try {
             const response = await fetch(`/api/bookings`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                    'Authorization': `Bearer ${token}` // Replace with actual user ID
                 },
                 body: JSON.stringify({ bookingId })
             });
@@ -83,12 +99,17 @@ export default function BookingsPage() {
     };
 
     const generateInvoice = async (bookingId: string) => {
+        if (!token) {
+            console.log("No token found. Please log in.");
+            return;
+          }
+
         try {
             const response = await fetch(`/api/bookings/invoice?bookingId=${bookingId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-user": JSON.stringify({ id: "user-id-placeholder" }) // Replace with actual user ID
+                    'Authorization': `Bearer ${token}` // Replace with actual user ID
                 }
             });
 
@@ -111,8 +132,20 @@ export default function BookingsPage() {
 
     useEffect(() => {
         async function fetchBookings() {
+            if (!token) {
+                console.log("No token found. Please log in.");
+                return;
+              }
+
             try {
-                const response = await fetch("/api/bookings");
+                const response = await fetch('/api/bookings', {
+                    method: 'GET',
+                    headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                    }
+                });
+
                 if (!response.ok) {
                     throw new Error("Failed to fetch bookings");
                 }
