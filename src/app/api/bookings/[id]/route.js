@@ -3,43 +3,47 @@ const prisma = new PrismaClient();
 import { validateCreditCard } from '@utils/helpers';
 
 export async function PUT(request, { params }) {
-    // Extract user object from headers
-    const userHeader = request.headers.get("x-user");
+  // UNCOMMENT after doing auth
+    // // Extract user object from headers
+    // const userHeader = request.headers.get("x-user");
 
-    // Check if the userHeader is missing or invalid
-    if (!userHeader) {
-        // console.log("User header is missing or empty");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Check if the userHeader is missing or invalid
+    // if (!userHeader) {
+    //     // console.log("User header is missing or empty");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    let validatedUser;
-    try {
-        validatedUser = JSON.parse(userHeader); // Try to parse the header
-        // console.log("Parsed user:", validatedUser);
-    } catch (error) {
-        // console.log("Error parsing user header:", error);
-        return new Response(
-            JSON.stringify({ error: "Invalid user data" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // let validatedUser;
+    // try {
+    //     validatedUser = JSON.parse(userHeader); // Try to parse the header
+    //     // console.log("Parsed user:", validatedUser);
+    // } catch (error) {
+    //     // console.log("Error parsing user header:", error);
+    //     return new Response(
+    //         JSON.stringify({ error: "Invalid user data" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
-    const userId = validatedUser.id; // Ensure ID is extracted correctly
-    // console.log("User ID:", userId);
+    // const userId = validatedUser.id; // Ensure ID is extracted correctly
+    // // console.log("User ID:", userId);
 
-    // Ensure userId is valid
-    if (!userId) {
-        // console.log("User ID is invalid");
-        return new Response(
-            JSON.stringify({ error: "Unauthorized or Invalid token" }),
-            { status: 401, headers: { "Content-Type": "application/json" } }
-        );
-    }
+    // // Ensure userId is valid
+    // if (!userId) {
+    //     // console.log("User ID is invalid");
+    //     return new Response(
+    //         JSON.stringify({ error: "Unauthorized or Invalid token" }),
+    //         { status: 401, headers: { "Content-Type": "application/json" } }
+    //     );
+    // }
 
     try {   
+      // delete after doing auth
+        const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804";
+
         const { id: bookingId } = await params;
         const body = await request.json();
         const { creditCard } = body;
@@ -52,20 +56,20 @@ export async function PUT(request, { params }) {
             include: { flights: true, hotels: true }
           });
 
-          // Clear itinerary of all of existing flights and hotels (need to do)
-          await prisma.flightBooking.deleteMany({
-            where: { 
-              userId: userId,
-              itineraryId: itineraryToUpdate.id
-            }
-          });
+          // // Clear itinerary of all of existing flights and hotels (need to do)
+          // await prisma.flightBooking.deleteMany({
+          //   where: { 
+          //     userId: userId,
+          //     itineraryId: itineraryToUpdate.id
+          //   }
+          // });
 
-          await prisma.hotelBooking.deleteMany({
-            where: { 
-              userId: userId,
-              itineraryId: itineraryToUpdate.id 
-            }
-          });
+          // await prisma.hotelBooking.deleteMany({
+          //   where: { 
+          //     userId: userId,
+          //     itineraryId: itineraryToUpdate.id 
+          //   }
+          // });
 
           // Get updated flights and hotel bookings (will have null itinerary bc not associated with one yet)
           const updatedFlightBookings = await prisma.flightBooking.findMany({
@@ -75,20 +79,20 @@ export async function PUT(request, { params }) {
             },
           });
 
-          const updatedHotelBookings = await prisma.hotelBooking.findMany({
-              where: {
-                userId: userId,
-                itineraryId: null, // itinerary is not set
-              },
-          });
+          // const updatedHotelBookings = await prisma.hotelBooking.findMany({
+          //     where: {
+          //       userId: userId,
+          //       itineraryId: null, // itinerary is not set
+          //     },
+          // });
 
           const updatedData = {};
           if (updatedFlightBookings) {
             updatedData.flights = { set: updatedFlightBookings };
           }
-          if (updatedHotelBookings) {
-            updatedData.hotels = { set: updatedHotelBookings };
-          }
+          // if (updatedHotelBookings) {
+          //   updatedData.hotels = { set: updatedHotelBookings };
+          // }
           
           // Update itinerary with new details
           await prisma.itinerary.update({

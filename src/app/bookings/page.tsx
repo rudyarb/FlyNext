@@ -215,10 +215,10 @@ export default function BookingsPage() {
                         </button>
 
                         <button
-                            onClick={() => router.push("/flight-search")}
+                            onClick={() => router.push(`/flight-search/update?bookingId=${booking.id}`)}
                             className="mt-4 ml-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75"
                         >
-                            Modify Booking
+                            Add Flight
                         </button>
 
                         <button
