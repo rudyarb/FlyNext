@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Node.js application
+  app:
+    build: .
+    container_name: node_app
+    ports:
+      - '3000:3000'
+    environment:
+      - PORT=3000
+      - DB_USER=postgres
+      - DB_HOST=db
+      - DB_NAME=postgres
+      - DB_PASSWORD=password
+      - DB_PORT=5432
+    depends_on:
+      - db
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # PostgreSQL database
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# Named volume to persist database data
+volumes:
+  postgres_data:
