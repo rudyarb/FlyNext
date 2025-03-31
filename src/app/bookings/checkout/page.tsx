@@ -148,13 +148,13 @@ export default function Checkout() {
 
       {bookingSuccess && (
         <p className="text-green-500 mt-4">
-          Your booking has been placed successfully! Please go to "All Your Bookings" to see it!
+          Your booking has been placed successfully! Please go to "My Bookings" to see it!
         </p>
       )}
 
-      <Link href="/bookings" className="block mt-4 text-blue-600 dark:text-blue-400 hover:underline">
+      {/* <Link href="/bookings" className="block mt-4 text-blue-600 dark:text-blue-400 hover:underline">
         All Your Bookings
-      </Link>
+      </Link> */}
     </div>
   );
 }
