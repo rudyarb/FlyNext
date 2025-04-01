@@ -284,17 +284,24 @@ const HotelSearch: React.FC = () => {
               <select
                 value={starRating}
                 onChange={e => setStarRating(e.target.value)}
-                className="w-full px-4 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                className="w-full px-4 py-2 text-black dark:text-white bg-white dark:bg-gray-800 
+                  border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+                  hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 
+                  appearance-none cursor-pointer"
               >
-                <option value="">Any</option>
+                <option value="" className="bg-white dark:bg-gray-800">Any</option>
                 {[5, 4, 3, 2, 1].map(rating => (
-                  <option key={rating} value={rating}>
+                  <option 
+                    key={rating} 
+                    value={rating}
+                    className="bg-white dark:bg-gray-800 py-2"
+                  >
                     {"⭐".repeat(rating)} ({rating}-star)
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 pt-6">
-                <svg className="fill-current h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <div className="pointer-events-none absolute right-0 top-[38px] px-3 py-2">
+                <svg className="h-4 w-4 fill-current text-gray-500 dark:text-gray-400" viewBox="0 0 20 20">
                   <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                 </svg>
               </div>
