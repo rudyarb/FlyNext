@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -89,8 +89,8 @@ model FlightBooking {
   itinerary          Itinerary? @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
   userId             String
   user               User       @relation(fields: [userId], references: [id])
-  passportNumber  String
-  email String  
+  passportNumber     String
+  email              String  
 }
 
 model Hotel {
@@ -98,23 +98,24 @@ model Hotel {
   name          String
   logo          String?
   address       String
-  location      String
+  city          String
   starRating    Int
   images        Json
   ownerId       String
   owner         HotelOwner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  rooms         Room[]
+  roomTypes     RoomType[]
   hotelBookings HotelBooking[]
 }
 
-model Room {
+model RoomType {
   id            String         @id @default(uuid())
   type          String
   amenities     Json
   pricePerNight Float
   images        Json
   hotelId       String
-  available     Boolean        @default(true)
+  quantity      Int
+  availability  Int
   hotel         Hotel          @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   hotelBookings HotelBooking[]
 }
@@ -124,13 +125,13 @@ model HotelBooking {
   hotelId      String
   hotel        Hotel      @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   roomId       String
-  room         Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomType     RoomType       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   userId       String
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookingDate  DateTime   @default(now())
   checkInDate  DateTime
   checkOutDate DateTime
-  status       String
+  status       String     // e.g., "CONFIRMED", "CANCELLED"
   itineraryId  String?
   itinerary    Itinerary? @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
 }
