@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from "react";
 import React from 'react';
-import FlightList from '../components/FlightSearch';
-import { Flight } from '../components/FlightSearch';
+import FlightList from '../../components/FlightSearch'; // Corrected import path
+import { Flight } from '../../components/FlightSearch'; // Corrected import path
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation'; // Import useSearchParams
 
-const FlightSearchPage = () => {
+const FlightSearchUpdatePage = () => {
   const [isClient, setIsClient] = useState(false);
   const [source, setSource] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
@@ -18,6 +19,8 @@ const FlightSearchPage = () => {
   const [passportNumber, setPassportNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
   const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
@@ -143,57 +146,57 @@ const FlightSearchPage = () => {
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-md">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Flight Search</h2>
+    <div className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-md">
+      <h2 className="text-2xl font-semibold mb-4">Flight Search</h2>
       <form onSubmit={handleSearch} className="space-y-4">
         <div>
-          <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Source</label>
+          <label htmlFor="source" className="block text-sm font-medium">Source</label>
           <input
             type="text"
             id="source"
             value={source}
             onChange={(e) => setSource(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
             placeholder="Enter source"
           />
         </div>
         <div>
-          <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Destination</label>
+          <label htmlFor="destination" className="block text-sm font-medium">Destination</label>
           <input
             type="text"
             id="destination"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
             placeholder="Enter destination"
           />
         </div>
         <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Departure Date</label>
+          <label htmlFor="startDate" className="block text-sm font-medium">Departure Date</label>
           <input
             type="date"
             id="startDate"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
           />
         </div>
         <div>
-          <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Return Date</label>
+          <label htmlFor="returnDate" className="block text-sm font-medium">Return Date</label>
           <input
             type="date"
             id="returnDate"
             value={returnDate}
             onChange={(e) => setReturnDate(e.target.value)}
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="mt-1 p-2 border border-gray-300 rounded-md w-full"
           />
         </div>
         <button
           type="submit"
-          className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md w-full hover:bg-blue-700 dark:hover:bg-blue-600"
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md w-full"
         >
           Search Flights
         </button>
@@ -201,20 +204,33 @@ const FlightSearchPage = () => {
 
       {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
         <div className="mt-8">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Start Flights</h3>
+          <h3 className="text-xl font-semibold">Start Flights</h3>
           <FlightList
             flights={startFlights}
             onBookFlight={handleBookFlight}
           />
-          <h3 className="text-xl font-semibold mt-4 text-gray-800 dark:text-white">Return Flights</h3>
+          <h3 className="text-xl font-semibold mt-4">Return Flights</h3>
           <FlightList
             flights={returnFlights}
             onBookFlight={handleBookFlight}
           />
         </div>
       ) : (
-        <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
+        <p className="mt-8 text-center text-gray-500">No flights found. Try a different search.</p>
       )}
+
+      <div className="mt-8 text-center">
+        {bookingId ? (
+          <Link
+            href={`/bookings/checkout/update?bookingId=${bookingId}`} // Pass bookingId as query param
+            className="text-blue-600 underline"
+          >
+            Proceed to Checkout
+          </Link>
+        ) : (
+          <p className="text-red-500">Booking ID is missing. Cannot proceed to checkout.</p>
+        )}
+      </div>
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -257,14 +273,8 @@ const FlightSearchPage = () => {
           </div>
         </div>
       )}
-
-      <div className="mt-8 text-center">
-        <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
-          Proceed to Checkout
-        </Link>
-      </div>
     </div>
   );
 };
 
-export default FlightSearchPage;
+export default FlightSearchUpdatePage;

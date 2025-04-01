@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function GET(request) {
+  // Uncomment this when auth is done
   // Extract user object from headers
   const userHeader = request.headers.get("x-user");
 
@@ -66,6 +67,8 @@ export async function GET(request) {
     }
 
     // Authenicate the user
+    // DELETE this when auth done
+    // const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804"; // Replace with actual userId from auth token
     if (booking.userId != userId) {
       return new Response(
           JSON.stringify({ error: "Unauthorized or Invalid token" }),

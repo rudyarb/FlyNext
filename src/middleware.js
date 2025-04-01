@@ -31,6 +31,8 @@ export const config = {
         "/api/bookings/:invoice",
         "/api/bookings/:verify-flight",
         "/api/flight-search",
+        "/api/flight-booking",
+        "/api/hotel-booking",
         "/api/hotels/info/:hotelId/bookings",
         "/api/hotels/info/:hotelId/bookings/availability",
         "/api/hotels/manage",
