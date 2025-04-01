@@ -85,9 +85,11 @@ export default function CheckoutUpdate() {
       if (!response.ok) {
         const errorData = await response.json();
         if (response.status === 400 && errorData.message === "Credit card details invalid") {
-          throw new Error('Invalid credit card details. Please check and try again.');
+          alert("Invalid credit card details. Please check and try again.");
+          return;
         }
-        throw new Error(errorData.error || 'Failed to update booking');
+        alert(errorData.error || "Failed to update booking.");
+        return;
       }
 
       const updatedBooking = await response.json();
@@ -102,7 +104,8 @@ export default function CheckoutUpdate() {
       setBookingSuccess(true);
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      alert(err instanceof Error ? err.message : "An unknown error occurred.");
+      return;
     } finally {
       setLoading(false);
     }

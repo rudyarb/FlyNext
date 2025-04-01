@@ -73,7 +73,8 @@ export default function Checkout() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to finalize booking');
+        alert(errorData.error || "Failed to finalize booking.");
+        return;
       }
 
       const data = await response.json();
@@ -81,7 +82,8 @@ export default function Checkout() {
       setBookingSuccess(true);
     } catch (err) {
       console.error(err);
-      setError('Failed to finalize booking. Please try again.');
+      alert("Failed to finalize booking. Please try again.");
+      return;
     } finally {
       setLoading(false);
     }

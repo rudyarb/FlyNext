@@ -7,14 +7,20 @@ import { FlightBooking, HotelBooking } from "../components/FlightSearch";
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState<string | null>(null); // Use state for token
     const router = useRouter(); // Initialize useRouter
-    const token = localStorage.getItem("token"); // Get the token from local storage
+
+    useEffect(() => {
+        // Access localStorage only on the client side
+        const storedToken = localStorage.getItem("token");
+        setToken(storedToken);
+    }, []);
 
     const verifyFlight = async (flightBookingId: string) => {
         if (!token) {
             console.log("No token found. Please log in.");
             return;
-          }
+        }
 
         try {
             const response = await fetch(`/api/bookings/verify-flight?flightBookingId=${flightBookingId}`, {
@@ -42,7 +48,7 @@ export default function BookingsPage() {
         if (!token) {
             console.log("No token found. Please log in.");
             return;
-          }
+        }
 
         try {
             const response = await fetch(`/api/flight-booking`, {
@@ -72,7 +78,7 @@ export default function BookingsPage() {
         if (!token) {
             console.log("No token found. Please log in.");
             return;
-          }
+        }
 
         try {
             const response = await fetch(`/api/bookings`, {
@@ -102,7 +108,7 @@ export default function BookingsPage() {
         if (!token) {
             console.log("No token found. Please log in.");
             return;
-          }
+        }
 
         try {
             const response = await fetch(`/api/bookings/invoice?bookingId=${bookingId}`, {
@@ -135,31 +141,36 @@ export default function BookingsPage() {
             if (!token) {
                 console.log("No token found. Please log in.");
                 return;
-              }
+            }
 
             try {
                 const response = await fetch('/api/bookings', {
                     method: 'GET',
                     headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Replace with actual user ID
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch bookings");
+                    alert("Failed to fetch bookings.");
+                    return;
                 }
                 const bookingsData = await response.json();
                 setBookings(bookingsData);
             } catch (error) {
                 console.error("Error fetching bookings:", error);
+                alert("An error occurred while fetching bookings.");
+                return;
             } finally {
                 setLoading(false);
             }
         }
 
-        fetchBookings();
-    }, []);
+        if (token) {
+            fetchBookings();
+        }
+    }, [token]); // Add token as a dependency
 
     if (loading) {
         return <p>Loading bookings...</p>;

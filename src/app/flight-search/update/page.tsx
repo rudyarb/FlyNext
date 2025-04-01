@@ -132,7 +132,8 @@ const FlightSearchUpdatePage = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to book flight: ${response.statusText}`);
+        alert(`Failed to book flight: ${response.statusText}`);
+        return;
       }
 
       const data = await response.json();
@@ -142,6 +143,7 @@ const FlightSearchUpdatePage = () => {
     } catch (error) {
       console.error("Error booking flight:", error);
       alert("Failed to book flight. Please try again.");
+      return;
     }
   };
 
