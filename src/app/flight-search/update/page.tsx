@@ -15,6 +15,10 @@ const FlightSearchUpdatePage = () => {
   const [startFlights, setStartFlights] = useState<Flight[]>([]);
   const [returnFlights, setReturnFlights] = useState<Flight[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [passportNumber, setPassportNumber] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
   const token = localStorage.getItem("token"); // Get the token from local storage
@@ -56,7 +60,7 @@ const FlightSearchUpdatePage = () => {
         data.startFlights?.results?.flatMap((group: any, groupIndex: number) =>
           group.flights.map((flight: any, flightIndex: number) => ({
             ...flight,
-            id: `start-${groupIndex}-${flightIndex}-${flight.id}`,
+            id: `start_${groupIndex}_${flightIndex}_${flight.id}`,
             duration: flight.duration, // Include duration
             status: flight.status, // Include status
           }))
@@ -67,7 +71,7 @@ const FlightSearchUpdatePage = () => {
         data.returnFlights?.results?.flatMap((group: any, groupIndex: number) =>
           group.flights.map((flight: any, flightIndex: number) => ({
             ...flight,
-            id: `return-${groupIndex}-${flightIndex}-${flight.id}`,
+            id: `return_${groupIndex}_${flightIndex}_${flight.id}`,
             duration: flight.duration, // Include duration
             status: flight.status, // Include status
           }))
@@ -80,7 +84,17 @@ const FlightSearchUpdatePage = () => {
     }
   };
 
-  const handleBookFlight = async (flight: Flight) => {
+  const handleBookFlight = (flight: Flight) => {
+    setSelectedFlight(flight);
+    setShowModal(true); // Show modal to collect user details
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!passportNumber || !email) {
+      alert("Please enter both passport number and email.");
+      return;
+    }
+
     if (!token) {
       console.log("No token found. Please log in.");
       return;
@@ -91,39 +105,40 @@ const FlightSearchUpdatePage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          flightId: flight.id,
-          flightNumber: flight.flightNumber,
-          departureTime: flight.departureTime,
-          originCode: flight.origin.code,
-          originName: flight.origin.name,
-          originCity: flight.origin.city,
-          originCountry: flight.origin.country,
-          arrivalTime: flight.arrivalTime,
-          destinationCode: flight.destination.code,
-          destinationName: flight.destination.name,
-          destinationCity: flight.destination.city,
-          destinationCountry: flight.destination.country,
-          duration: flight.duration, // Replace with actual duration if available
-          price: flight.price,
-          currency: flight.currency,
-          availableSeats: flight.availableSeats,
-          status: flight.status, // Replace with actual status if available
-          airlineName: flight.airline.name,
-          passportNumber: "passport-placeholder", // Replace with actual passport number
-          email: "rudydoody@gmail.com", // Replace with actual email
+          flightId: selectedFlight?.id,
+          flightNumber: selectedFlight?.flightNumber,
+          departureTime: selectedFlight?.departureTime,
+          originCode: selectedFlight?.origin.code,
+          originName: selectedFlight?.origin.name,
+          originCity: selectedFlight?.origin.city,
+          originCountry: selectedFlight?.origin.country,
+          arrivalTime: selectedFlight?.arrivalTime,
+          destinationCode: selectedFlight?.destination.code,
+          destinationName: selectedFlight?.destination.name,
+          destinationCity: selectedFlight?.destination.city,
+          destinationCountry: selectedFlight?.destination.country,
+          duration: selectedFlight?.duration,
+          price: selectedFlight?.price,
+          currency: selectedFlight?.currency,
+          availableSeats: selectedFlight?.availableSeats,
+          status: selectedFlight?.status,
+          airlineName: selectedFlight?.airline.name,
+          passportNumber,
+          email,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error(`Failed to book flight: ${response.statusText}`);
       }
-  
+
       const data = await response.json();
       console.log("Flight booked successfully:", data);
       alert("Flight booked successfully!");
+      setShowModal(false); // Close modal
     } catch (error) {
       console.error("Error booking flight:", error);
       alert("Failed to book flight. Please try again.");
@@ -216,6 +231,48 @@ const FlightSearchUpdatePage = () => {
           <p className="text-red-500">Booking ID is missing. Cannot proceed to checkout.</p>
         )}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4">Enter Details</h3>
+            <div className="mb-4">
+              <label htmlFor="passportNumber" className="block text-sm font-medium">Passport Number</label>
+              <input
+                type="text"
+                id="passportNumber"
+                value={passportNumber}
+                onChange={(e) => setPassportNumber(e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium">Email</label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-300 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBooking}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
