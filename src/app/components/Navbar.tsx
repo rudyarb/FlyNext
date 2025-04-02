@@ -59,13 +59,13 @@ const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <>
               <Link 
-                href="/login" 
+                href="/users/login" 
                 className="px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Login
               </Link>
               <Link 
-                href="/register" 
+                href="/users/signup" 
                 className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Register
