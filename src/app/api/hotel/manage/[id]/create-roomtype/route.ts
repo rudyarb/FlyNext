@@ -27,12 +27,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             );
         }
 
+        // Format price to 2 decimal places
+        const formattedPrice = Number(pricePerNight.toFixed(2));
+        if (isNaN(formattedPrice) || formattedPrice < 0) {
+            return NextResponse.json(
+                { error: "Invalid price format or negative price." },
+                { status: 400 }
+            );
+        }
+
         // Create the room
         const roomType = await prisma.roomType.create({
             data: {
                 type,
                 amenities: JSON.stringify(amenities),
-                pricePerNight,
+                pricePerNight: formattedPrice, // Use formatted price
                 images: JSON.stringify(images),
                 quantity,
                 availability: quantity,

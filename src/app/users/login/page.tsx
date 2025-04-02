@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext"; // Import the auth context
 
-export default function AuthPage() {
+export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth(); // Access the login function from AuthContext
   const [email, setEmail] = useState("");

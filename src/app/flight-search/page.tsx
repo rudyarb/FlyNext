@@ -5,7 +5,7 @@ import FlightList from '../components/FlightSearch';
 import { Flight } from '../components/FlightSearch';
 import Link from 'next/link';
 
-const FlightSearchPage = () => {
+export default function FlightSearchPage() {
   const [isClient, setIsClient] = useState(false);
   const [source, setSource] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
@@ -145,128 +145,128 @@ const FlightSearchPage = () => {
   };
 
   return (
-    <div className="p-4 max-w-xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-md">
-      <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Flight Search</h2>
-      <form onSubmit={handleSearch} className="space-y-4">
-        <div>
-          <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Source</label>
-          <input
-            type="text"
-            id="source"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Enter source"
-          />
-        </div>
-        <div>
-          <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Destination</label>
-          <input
-            type="text"
-            id="destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Enter destination"
-          />
-        </div>
-        <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Departure Date</label>
-          <input
-            type="date"
-            id="startDate"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-        </div>
-        <div>
-          <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Return Date</label>
-          <input
-            type="date"
-            id="returnDate"
-            value={returnDate}
-            onChange={(e) => setReturnDate(e.target.value)}
-            className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-        </div>
-        <button
-          type="submit"
-          className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md w-full hover:bg-blue-700 dark:hover:bg-blue-600"
-        >
-          Search Flights
-        </button>
-      </form>
+    <main className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="p-4 max-w-xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-md">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Flight Search</h2>
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div>
+            <label htmlFor="source" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Source</label>
+            <input
+              type="text"
+              id="source"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              required
+              className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Enter source"
+            />
+          </div>
+          <div>
+            <label htmlFor="destination" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Destination</label>
+            <input
+              type="text"
+              id="destination"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              required
+              className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Enter destination"
+            />
+          </div>
+          <div>
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Departure Date</label>
+            <input
+              type="date"
+              id="startDate"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+              className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label htmlFor="returnDate" className="block text-sm font-medium text-gray-700 dark:text-gray-200">Return Date</label>
+            <input
+              type="date"
+              id="returnDate"
+              value={returnDate}
+              onChange={(e) => setReturnDate(e.target.value)}
+              className="mt-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+          <button
+            type="submit"
+            className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md w-full hover:bg-blue-700 dark:hover:bg-blue-600"
+          >
+            Search Flights
+          </button>
+        </form>
 
-      {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Start Flights</h3>
-          <FlightList
-            flights={startFlights}
-            onBookFlight={handleBookFlight}
-          />
-          <h3 className="text-xl font-semibold mt-4 text-gray-800 dark:text-white">Return Flights</h3>
-          <FlightList
-            flights={returnFlights}
-            onBookFlight={handleBookFlight}
-          />
-        </div>
-      ) : (
-        <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
-      )}
+        {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Start Flights</h3>
+            <FlightList
+              flights={startFlights}
+              onBookFlight={handleBookFlight}
+            />
+            <h3 className="text-xl font-semibold mt-4 text-gray-800 dark:text-white">Return Flights</h3>
+            <FlightList
+              flights={returnFlights}
+              onBookFlight={handleBookFlight}
+            />
+          </div>
+        ) : (
+          <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
+        )}
 
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-md shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Enter Details</h3>
-            <div className="mb-4">
-              <label htmlFor="passportNumber" className="block text-sm font-medium">Passport Number</label>
-              <input
-                type="text"
-                id="passportNumber"
-                value={passportNumber}
-                onChange={(e) => setPassportNumber(e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-              />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmBooking}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
-              >
-                Confirm
-              </button>
+        {showModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-md shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Enter Details</h3>
+              <div className="mb-4">
+                <label htmlFor="passportNumber" className="block text-sm font-medium">Passport Number</label>
+                <input
+                  type="text"
+                  id="passportNumber"
+                  value={passportNumber}
+                  onChange={(e) => setPassportNumber(e.target.value)}
+                  className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-300 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmBooking}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        <div className="mt-8 text-center">
+          <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Proceed to Checkout
+          </Link>
         </div>
-      )}
-
-      <div className="mt-8 text-center">
-        <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
-          Proceed to Checkout
-        </Link>
       </div>
-    </div>
+    </main>
   );
-};
-
-export default FlightSearchPage;
+}

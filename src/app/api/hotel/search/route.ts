@@ -41,6 +41,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const starRating = searchParams.get('starRating');
     const priceRange = searchParams.get('priceRange');
 
+    // Add pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
+
     // Validate required parameters
     if (!checkIn || !checkOut || !city) {
       return NextResponse.json(
@@ -90,6 +95,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const hotels = await prisma.hotel.findMany({
       where: whereClause,
+      skip,
+      take: limit,
       select: {
         id: true,
         name: true,
@@ -120,6 +127,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     });
 
+    // Get total count for pagination
+    const total = await prisma.hotel.count({
+      where: whereClause
+    });
+
     // Process hotels to include only those with available rooms
     const availableHotels: HotelResponse[] = hotels
       .map(hotel => {
@@ -148,15 +160,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           starRating: hotel.starRating,
           logo: hotel.logo,
           startingPrice,
-          // availableRooms
         };
       })
       .filter((hotel): hotel is HotelResponse => hotel !== null)
       .sort((a, b) => a.startingPrice - b.startingPrice);
 
-    return NextResponse.json({ hotels: availableHotels } as const, {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
+    return NextResponse.json({
+      hotels: availableHotels,
+      pagination: {
+        total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        limit
+      }
     });
 
   } catch (error) {

@@ -51,11 +51,16 @@ const HotelSearch: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [searchRef] = useState(() => React.createRef<HTMLDivElement>());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const limit = 10; // Hotels per page
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(-1);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
       }
     }
 
@@ -98,6 +103,35 @@ const HotelSearch: React.FC = () => {
     []
   );
 
+  const handleCityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || isLoadingCities) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < citySuggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > -1 ? prev - 1 : prev);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0 && citySuggestions[selectedSuggestionIndex]) {
+          setCity(citySuggestions[selectedSuggestionIndex].city);
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -138,6 +172,8 @@ const HotelSearch: React.FC = () => {
       checkIn: checkIn.toISOString(),
       checkOut: checkOut.toISOString(),
       city: city,
+      page: currentPage.toString(),
+      limit: limit.toString(),
       ...(name && { name }),
       ...(starRating && { starRating }),
       ...(priceRange && { priceRange })
@@ -152,6 +188,7 @@ const HotelSearch: React.FC = () => {
       }
 
       setHotels(data.hotels);
+      setTotalPages(data.pagination.totalPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -161,6 +198,11 @@ const HotelSearch: React.FC = () => {
 
   const handleViewHotel = (hotelId: string) => {
     router.push(`/hotel/${hotelId}`);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    handleSearch(new Event('submit') as any);
   };
 
   return (
@@ -218,10 +260,12 @@ const HotelSearch: React.FC = () => {
                   const value = e.target.value;
                   setCity(value);
                   setValidationErrors(prev => ({ ...prev, city: false }));
+                  setSelectedSuggestionIndex(-1); // Reset selection on type
                   fetchCities(value);
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleCityKeyDown}
                 className={`w-full px-4 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border ${
                   validationErrors.city 
                     ? 'border-red-500 focus:ring-red-500' 
@@ -229,7 +273,7 @@ const HotelSearch: React.FC = () => {
                 } rounded-md shadow-sm focus:outline-none focus:ring-2`}
                 placeholder="City"
               />
-              
+
               {showSuggestions && (citySuggestions.length > 0 || isLoadingCities) && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
                   {isLoadingCities ? (
@@ -237,13 +281,18 @@ const HotelSearch: React.FC = () => {
                       Loading...
                     </div>
                   ) : (
-                    citySuggestions.map((option) => (
+                    citySuggestions.map((option, index) => (
                       <div
                         key={`${option.city}-${option.country}`}
-                        className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className={`px-4 py-2 cursor-pointer ${
+                          index === selectedSuggestionIndex
+                            ? 'bg-blue-100 dark:bg-blue-900'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                         onClick={() => {
                           setCity(option.city);
                           setShowSuggestions(false);
+                          setSelectedSuggestionIndex(-1);
                         }}
                       >
                         <span className="text-black dark:text-white">{option.city}</span>
@@ -367,8 +416,8 @@ const HotelSearch: React.FC = () => {
         {hotels.map(hotel => (
           <div key={hotel.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex flex-col md:flex-row">
-              {/* Image section */}
-              <div className="w-full md:w-72 h-48 md:h-full relative bg-gray-100 dark:bg-gray-700">
+              {/* Image section - Updated styling with fixed dimensions */}
+              <div className="w-full md:w-48 h-48 md:h-48 relative bg-gray-100 dark:bg-gray-700 flex-shrink-0">
                 {hotel.logo ? (
                   <img
                     src={hotel.logo}
@@ -377,13 +426,13 @@ const HotelSearch: React.FC = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                    <FaImage size={48} />
+                    <FaImage size={32} />
                   </div>
                 )}
               </div>
 
               {/* Content section */}
-              <div className="flex-1 p-6">
+              <div className="flex-1 p-4">
                 <div className="flex flex-col h-full justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-2">
@@ -401,7 +450,7 @@ const HotelSearch: React.FC = () => {
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-baseline">
                       <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                        ${hotel.startingPrice}
+                        ${hotel.startingPrice.toFixed(2)}
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400 ml-1">/night</span>
                     </div>
@@ -422,6 +471,41 @@ const HotelSearch: React.FC = () => {
           <p className="text-center text-gray-600 dark:text-gray-400">No hotels found matching your criteria.</p>
         )}
       </div>
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 border rounded-md disabled:opacity-50"
+          >
+            Previous
+          </button>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => handlePageChange(page)}
+              className={`px-4 py-2 border rounded-md ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 border rounded-md disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

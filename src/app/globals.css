@@ -80,3 +80,59 @@ body {
 .react-datepicker-wrapper {
   @apply w-full;
 }
+
+/* Custom Swiper styles */
+.swiper-button-next,
+.swiper-button-prev {
+  @apply text-white opacity-75 hover:opacity-100 transition-opacity;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2rem;
+  border-radius: 50%;
+  color: #000 !important;
+  transition: all 0.3s ease;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 1.5rem !important;
+  font-weight: bold;
+}
+
+.swiper-pagination-bullet {
+  @apply bg-white opacity-75;
+}
+
+.swiper-pagination-bullet-active {
+  @apply opacity-100;
+}
+
+/* Add fade gradients to edges */
+.carousel-container {
+  position: relative;
+}
+
+.carousel-container::before,
+.carousel-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.carousel-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);
+}
+
+.carousel-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);
+}
