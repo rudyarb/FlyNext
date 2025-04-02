@@ -1,9 +1,11 @@
+'use client';
+
 import HotelSearch from '@/app/components/HotelSearch';
 
 export default function HotelSearchPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <main className="container mx-auto px-4 py-8">
+    <main className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           {/* Page heading */}
           <div className="text-center mb-12">
@@ -20,7 +22,7 @@ export default function HotelSearchPage() {
             <HotelSearch />
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

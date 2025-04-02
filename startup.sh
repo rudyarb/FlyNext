@@ -26,7 +26,8 @@ npm install
 
 # 3️⃣ Run database migrations
 echo "🛠 Running database migrations..."
-npx prisma migrate deploy  # Adjust if using a different migration command
+npx prisma generate
+npx prisma migrate dev  # Adjust if using a different migration command
 
 # 4️⃣ Fetch and store cities & airports from AFS
 echo "🌍 Fetching cities and airports from AFS..."
@@ -38,5 +39,7 @@ node saveCities.js
 # Fetch and store airports
 echo "✈️ Fetching airports..."
 node saveAirports.js
+
+node generateHotels.js
 
 echo "✅ Environment setup complete!"
