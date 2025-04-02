@@ -1,19 +1,14 @@
-import React from 'react';
-import Link from 'next/link';
-import Logo from './Logo';
-import DarkModeToggle from './DarkModeToggle';
+"use client";  // Mark this file as a client-side component
 
-interface NavbarProps {
-  userLoggedIn?: boolean;
-  userName?: string;
-  onLogout?: () => void;
-}
+import React from "react";
+import Link from "next/link";
+import Logo from "./Logo";
+import DarkModeToggle from "./DarkModeToggle";
+import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
 
-const Navbar: React.FC<NavbarProps> = ({
-  userLoggedIn = false,
-  userName = '',
-  onLogout
-}) => {
+const Navbar: React.FC = () => {
+  const { isAuthenticated, userName, logout } = useAuth(); // Get authentication state from AuthContext
+
   return (
     <nav className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white shadow-md">
       <div className="container mx-auto flex justify-between items-center px-4 py-3">
@@ -46,11 +41,11 @@ const Navbar: React.FC<NavbarProps> = ({
 
         <div className="flex items-center space-x-4">
           <DarkModeToggle />
-          {userLoggedIn ? (
+          {isAuthenticated ? (
             <>
               <span className="text-gray-600 dark:text-gray-300">Welcome, {userName}</span>
               <button
-                onClick={onLogout}
+                onClick={logout}
                 className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 Logout
