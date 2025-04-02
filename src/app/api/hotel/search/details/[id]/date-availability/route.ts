@@ -2,15 +2,13 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
-    if (!params.id) {
-        return NextResponse.json(
-            { error: 'Hotel ID is required' },
-            { status: 400 }
-        );
-    }
-
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        // Await the params
+        const { id } = await params;
         const { searchParams } = new URL(request.url);
         const checkIn = searchParams.get('checkIn');
         const checkOut = searchParams.get('checkOut');
@@ -22,12 +20,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             );
         }
 
-        const hotelId = params.id;
-
         // Get all room types for this hotel
         const roomTypes = await prisma.roomType.findMany({
             where: {
-                hotelId: hotelId,
+                hotelId: id,
             },
             include: {
                 hotelBookings: {
@@ -42,25 +38,20 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             }
         });
 
-        // Calculate availability and format response
-        const availability = roomTypes.map(roomType => {
-            const bookedRoomsCount = roomType.hotelBookings.length;
-            const availableRooms = Math.max(0, roomType.quantity - bookedRoomsCount);
+        const availability = roomTypes.map(roomType => ({
+            id: roomType.id,
+            type: roomType.type,
+            amenities: roomType.amenities,
+            pricePerNight: roomType.pricePerNight,
+            images: roomType.images,
+            availableRooms: Math.max(0, roomType.quantity - roomType.hotelBookings.length),
+            totalRooms: roomType.quantity
+        }));
 
-            return {
-                roomTypeId: roomType.id,
-                type: roomType.type,
-                amenities: roomType.amenities,
-                pricePerNight: roomType.pricePerNight,
-                images: roomType.images,
-                availableRooms: availableRooms,
-                totalRooms: roomType.quantity
-            };
-        });
-
-        return NextResponse.json({ availability } as const,
-			{ status: 200, headers: { 'Content-Type': 'application/json' } }
-		);
+        return NextResponse.json(
+            { availability },
+            { status: 200 }
+        );
 
     } catch (error) {
         console.error('Error fetching room availability:', error);

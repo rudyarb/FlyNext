@@ -1,0 +1,168 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import HotelDetails from '@/app/components/HotelDetails';
+import RoomTypeCard from '@/app/components/RoomTypeCard';
+
+interface RoomType {
+  id: string;
+  type: string;
+  amenities: string[];
+  pricePerNight: number;
+  availableRooms: number;
+  totalRooms: number;
+  images: string[];
+}
+
+interface HotelDetails {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  starRating: number;
+  logo: string | null;
+  images: string[];
+  roomTypes: RoomType[];
+}
+
+export default function HotelDetailsPage() {
+  const params = useParams();
+  const hotelId = params.hotelId as string;
+
+  const [hotelDetails, setHotelDetails] = useState<HotelDetails | null>(null);
+  const [roomAvailability, setRoomAvailability] = useState<RoomType[]>([]);
+  const [checkIn, setCheckIn] = useState<string>('');
+  const [checkOut, setCheckOut] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  // Fetch hotel details
+  useEffect(() => {
+    if (!hotelId) return;
+    
+    async function fetchHotelDetails() {
+      try {
+        const response = await fetch(`/api/hotel/search/details/${hotelId}`);
+        if (!response.ok) throw new Error('Failed to fetch hotel details');
+        const data = await response.json();
+        setHotelDetails(data.hotelDetails);
+      } catch (error) {
+        setError('Failed to load hotel details');
+        console.error('Error:', error);
+      }
+    }
+
+    fetchHotelDetails();
+  }, [hotelId]);
+
+  // Initialize roomAvailability with hotel's room types
+  useEffect(() => {
+    if (hotelDetails) {
+      setRoomAvailability(hotelDetails.roomTypes);
+    }
+  }, [hotelDetails]);
+
+  // Fetch room availability
+  async function fetchRoomAvailability() {
+    if (!checkIn || !checkOut) {
+      setError('Please select both check-in and check-out dates');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await fetch(
+        `/api/hotel/search/details/${hotelId}/date-availability?checkIn=${checkIn}&checkOut=${checkOut}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch room availability');
+      const data = await response.json();
+      setRoomAvailability(data.availability);
+    } catch (error) {
+      setError('Failed to check room availability');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!hotelDetails) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center text-gray-700 dark:text-gray-300">
+          {error || 'Loading hotel details...'}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Hotel Details Section */}
+          <HotelDetails {...hotelDetails} />
+
+          {/* Date Selection Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Check Room Availability
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <label className="block">
+                <span className="text-gray-700 dark:text-gray-300">Check-In Date</span>
+                <input
+                  type="date"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="mt-1 block w-full h-10 px-3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
+                />
+              </label>
+              <label className="block">
+                <span className="text-gray-700 dark:text-gray-300">Check-Out Date</span>
+                <input
+                  type="date"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  min={checkIn || new Date().toISOString().split('T')[0]}
+                  className="mt-1 block w-full h-10 px-3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
+                />
+              </label>
+            </div>
+            {error && (
+              <p className="text-red-500 text-sm mb-4">{error}</p>
+            )}
+            <button
+              onClick={fetchRoomAvailability}
+              disabled={loading || !checkIn || !checkOut}
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Checking availability...' : 'Check Availability'}
+            </button>
+          </div>
+
+          {/* Room Types Section */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {checkIn && checkOut ? 'Available Room Types' : 'All Room Types'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {roomAvailability.length > 0 ? (
+                roomAvailability.map((room) => (
+                  <RoomTypeCard key={room.id} {...room} />
+                ))
+              ) : (
+                <p className="col-span-full text-center text-gray-700 dark:text-gray-300">
+                  No rooms available
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
