@@ -54,11 +54,13 @@ const HotelSearch: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const limit = 10; // Hotels per page
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number>(-1);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
       }
     }
 
@@ -100,6 +102,35 @@ const HotelSearch: React.FC = () => {
     }, 300),
     []
   );
+
+  const handleCityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || isLoadingCities) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < citySuggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > -1 ? prev - 1 : prev);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0 && citySuggestions[selectedSuggestionIndex]) {
+          setCity(citySuggestions[selectedSuggestionIndex].city);
+          setShowSuggestions(false);
+          setSelectedSuggestionIndex(-1);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,10 +260,12 @@ const HotelSearch: React.FC = () => {
                   const value = e.target.value;
                   setCity(value);
                   setValidationErrors(prev => ({ ...prev, city: false }));
+                  setSelectedSuggestionIndex(-1); // Reset selection on type
                   fetchCities(value);
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleCityKeyDown}
                 className={`w-full px-4 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border ${
                   validationErrors.city 
                     ? 'border-red-500 focus:ring-red-500' 
@@ -240,7 +273,7 @@ const HotelSearch: React.FC = () => {
                 } rounded-md shadow-sm focus:outline-none focus:ring-2`}
                 placeholder="City"
               />
-              
+
               {showSuggestions && (citySuggestions.length > 0 || isLoadingCities) && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
                   {isLoadingCities ? (
@@ -248,13 +281,18 @@ const HotelSearch: React.FC = () => {
                       Loading...
                     </div>
                   ) : (
-                    citySuggestions.map((option) => (
+                    citySuggestions.map((option, index) => (
                       <div
                         key={`${option.city}-${option.country}`}
-                        className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className={`px-4 py-2 cursor-pointer ${
+                          index === selectedSuggestionIndex
+                            ? 'bg-blue-100 dark:bg-blue-900'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                         onClick={() => {
                           setCity(option.city);
                           setShowSuggestions(false);
+                          setSelectedSuggestionIndex(-1);
                         }}
                       >
                         <span className="text-black dark:text-white">{option.city}</span>
