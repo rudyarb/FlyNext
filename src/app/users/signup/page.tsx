@@ -36,8 +36,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+    <main className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
         {error && <p className="text-red-500">{error}</p>}
         <form onSubmit={handleSignUp} className="space-y-4">
@@ -92,6 +92,6 @@ export default function SignUpPage() {
           </span>
         </p>
       </div>
-    </div>
+    </main>
   );
 }

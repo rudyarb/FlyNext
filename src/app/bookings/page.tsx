@@ -1,20 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter for navigation
+import { useRouter } from "next/navigation";
 import { FlightBooking, HotelBooking } from "../components/FlightSearch";
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [token, setToken] = useState<string | null>(null); // Use state for token
-    const router = useRouter(); // Initialize useRouter
+    const [token, setToken] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
-        // Access localStorage only on the client side
+        // Check authentication status
         const storedToken = localStorage.getItem("token");
+        if (!storedToken) {
+            router.push("/login"); // Redirect to login if no token
+            return;
+        }
         setToken(storedToken);
-    }, []);
+    }, [router]);
 
     const verifyFlight = async (flightBookingId: string) => {
         if (!token) {
@@ -27,7 +31,7 @@ export default function BookingsPage() {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -55,7 +59,7 @@ export default function BookingsPage() {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ flightBookingId })
             });
@@ -64,7 +68,7 @@ export default function BookingsPage() {
 
             if (response.ok) {
                 alert(data.message);
-                window.location.reload(); // Reload the bookings page
+                window.location.reload();
             } else {
                 alert(data.error || "Failed to delete flight booking.");
             }
@@ -85,7 +89,7 @@ export default function BookingsPage() {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ bookingId })
             });
@@ -94,7 +98,7 @@ export default function BookingsPage() {
 
             if (response.ok) {
                 alert(data.message);
-                window.location.reload(); // Reload the bookings page
+                window.location.reload();
             } else {
                 alert(data.error || "Failed to delete booking.");
             }
@@ -115,7 +119,7 @@ export default function BookingsPage() {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}` // Replace with actual user ID
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -148,7 +152,7 @@ export default function BookingsPage() {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` // Replace with actual user ID
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
@@ -170,26 +174,30 @@ export default function BookingsPage() {
         if (token) {
             fetchBookings();
         }
-    }, [token]); // Add token as a dependency
+    }, [token]);
 
     if (loading) {
-        return <p>Loading bookings...</p>;
+        return (
+            <div className="flex justify-center items-center min-h-screen bg-white dark:bg-gray-900">
+                <p className="text-gray-800 dark:text-gray-200">Loading bookings...</p>
+            </div>
+        );
     }
 
     return (
-        <div className="flex flex-col items-center text-gray-800 dark:text-white">
+        <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white p-4">
             <h1 className="text-2xl font-bold mb-4">Your Bookings</h1>
 
             <button
                 onClick={() => router.push("/")}
-                className="mb-6 px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+                className="mb-6 px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
             >
                 Go Back to Home
             </button>
 
             {bookings.length > 0 ? (
                 bookings.map((booking, bookingIndex) => (
-                    <div key={bookingIndex} className="mb-6 border border-gray-200 dark:border-gray-700 p-4 w-full max-w-3xl bg-white dark:bg-gray-800">
+                    <div key={bookingIndex} className="mb-6 border border-gray-200 dark:border-gray-700 p-4 w-full max-w-3xl rounded-lg bg-white dark:bg-gray-800 shadow-md">
                         <h2 className="text-xl font-semibold mb-2">
                             Booking ID: {booking.id || "N/A"}
                         </h2>
