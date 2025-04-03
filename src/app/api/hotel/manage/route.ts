@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     try {
         // Get user session info (assuming user ID is passed in headers)
         const userId = request.headers.get("x-user");
+        console.log("User ID from headers:", userId);
         
         if (!userId) {
             return NextResponse.json(

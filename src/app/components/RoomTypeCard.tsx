@@ -55,10 +55,11 @@ export default function RoomTypeCard({
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-[600px] flex flex-col
+      transform transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-500 border-2 border-transparent
       ${!isAvailable && showAvailability ? 'opacity-60' : ''}`}>
       {/* Room Images Carousel - Fixed height */}
       <div className="h-64 flex-shrink-0">
-        <ImageCarousel images={images} alt={type} height="h-full" />
+        <ImageCarousel images={images} alt={type} height="h-64" />
       </div>
 
       {/* Room Info - Flex grow with internal scrolling if needed */}

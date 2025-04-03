@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import HotelDetails from '@/app/components/HotelDetails';
 import RoomTypeCard from '@/app/components/RoomTypeCard';
@@ -29,6 +29,7 @@ interface HotelDetails {
 
 export default function HotelDetailsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const hotelId = params.hotelId as string;
 
   const [hotelDetails, setHotelDetails] = useState<HotelDetails | null>(null);
@@ -39,7 +40,7 @@ export default function HotelDetailsPage() {
   const [error, setError] = useState<string>('');
   const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
 
-  // Add this handler function after the state declarations
+  // Update the handleCheckInChange function
   const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCheckIn = e.target.value;
     setCheckIn(newCheckIn);
@@ -53,45 +54,67 @@ export default function HotelDetailsPage() {
     }
   };
 
-  // Fetch hotel details
+  // Add a handler for checkout changes
+  const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCheckOut(e.target.value);
+  };
+
+  // Replace the separate initialization effects with a single combined effect
   useEffect(() => {
     if (!hotelId) return;
     
-    async function fetchHotelDetails() {
+    async function initializeHotelPage() {
       try {
+        // First fetch hotel details
         const response = await fetch(`/api/hotel/search/details/${hotelId}`);
         if (!response.ok) throw new Error('Failed to fetch hotel details');
         const data = await response.json();
         setHotelDetails(data.hotelDetails);
+        setRoomAvailability(data.hotelDetails.roomTypes);
+
+        // Then check for dates in URL and fetch availability if present
+        const checkInParam = searchParams.get('checkIn');
+        const checkOutParam = searchParams.get('checkOut');
+
+        if (checkInParam && checkOutParam) {
+          setCheckIn(checkInParam);
+          setCheckOut(checkOutParam);
+          
+          // Fetch availability after hotel details are loaded
+          const availabilityResponse = await fetch(
+            `/api/hotel/search/details/${hotelId}/date-availability?checkIn=${checkInParam}&checkOut=${checkOutParam}`
+          );
+          if (!availabilityResponse.ok) throw new Error('Failed to fetch room availability');
+          const availabilityData = await availabilityResponse.json();
+          setRoomAvailability(availabilityData.availability);
+          setHasCheckedAvailability(true);
+        }
       } catch (error) {
         setError('Failed to load hotel details');
         console.error('Error:', error);
       }
     }
 
-    fetchHotelDetails();
-  }, [hotelId]);
+    initializeHotelPage();
+  }, [hotelId, searchParams]); // Include searchParams in dependencies
 
-  // Initialize roomAvailability with hotel's room types
+  // Update the date change effect
   useEffect(() => {
-    if (hotelDetails) {
-      setRoomAvailability(hotelDetails.roomTypes);
-    }
-  }, [hotelDetails]);
+    if (!hotelDetails || !checkIn || !checkOut) return;
+    
+    // Only fetch availability if both dates are present
+    fetchRoomAvailability(checkIn, checkOut);
+  }, [checkIn, checkOut, hotelDetails]); // Add hotelDetails as dependency
 
-  // Fetch room availability
-  async function fetchRoomAvailability() {
-    if (!checkIn || !checkOut) {
-      setError('Please select both check-in and check-out dates');
-      return;
-    }
+  async function fetchRoomAvailability(checkInDate = checkIn, checkOutDate = checkOut) {
+    if (!checkInDate || !checkOutDate) return;
 
     setLoading(true);
     setError('');
     
     try {
       const response = await fetch(
-        `/api/hotel/search/details/${hotelId}/date-availability?checkIn=${checkIn}&checkOut=${checkOut}`
+        `/api/hotel/search/details/${hotelId}/date-availability?checkIn=${checkInDate}&checkOut=${checkOutDate}`
       );
       if (!response.ok) throw new Error('Failed to fetch room availability');
       const data = await response.json();
@@ -104,6 +127,29 @@ export default function HotelDetailsPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!checkIn && !checkOut) return;
+    
+    // Update URL parameters
+    const params = new URLSearchParams(window.location.search);
+    
+    if (checkIn) {
+      params.set('checkIn', checkIn);
+    } else {
+      params.delete('checkIn');
+    }
+    
+    if (checkOut) {
+      params.set('checkOut', checkOut);
+    } else {
+      params.delete('checkOut');
+    }
+
+    // Update URL without page reload
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [checkIn, checkOut]);
 
   const sortedRoomTypes = roomAvailability.sort((a, b) => {
     // First sort by availability
@@ -153,7 +199,7 @@ export default function HotelDetailsPage() {
                 <input
                   type="date"
                   value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
+                  onChange={handleCheckOutChange}
                   min={checkIn || new Date().toISOString().split('T')[0]}
                   className="mt-1 block w-full p-2 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
@@ -162,19 +208,25 @@ export default function HotelDetailsPage() {
             {error && (
               <p className="text-red-500 text-sm mb-4">{error}</p>
             )}
-            <button
-              onClick={fetchRoomAvailability}
-              disabled={loading || !checkIn || !checkOut}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Checking availability...' : 'Check Availability'}
-            </button>
+            <div className="flex items-center gap-4">
+              {loading ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Checking availability...
+                </p>
+              ) : (!checkIn || !checkOut) ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Select check-in and check-out dates to see room availability
+                </p>
+              ) : null}
+            </div>
           </div>
 
           {/* Room Types Section */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {checkIn && checkOut ? 'Available Rooms' : 'Rooms'}
+                {checkIn && checkOut 
+                ? `Available Rooms from: ${new Date(checkIn).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} to ${new Date(checkOut).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` 
+                : 'Rooms'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {roomAvailability.length > 0 ? (

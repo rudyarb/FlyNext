@@ -30,30 +30,29 @@ export default function LoginPage() {
       const data = await response.json();
       const { accessToken } = data;
 
-      // ✅ Store token
+      // Store token
       localStorage.setItem("token", accessToken);
 
-      // ✅ Extract firstName from JWT (without modifying API)
+      // Extract firstName from JWT
       const decodedPayload = JSON.parse(atob(accessToken.split(".")[1])); 
       const userName = decodedPayload.firstName;
 
-      // ✅ Set the username and token in the AuthContext
-      login(accessToken, userName); // Update context
+      // Set the username and token in the AuthContext
+      login(accessToken, userName);
 
-      // ✅ Store userName in localStorage for persistence
+      // Store userName in localStorage
       localStorage.setItem("userName", userName);
 
-      // Check for redirect URL
+      // Always redirect to home page first
+      router.push("/");
+
+      // If there was a redirect URL stored, reload the page after a brief delay
       const redirectUrl = localStorage.getItem('redirectAfterLogin');
-      
       if (redirectUrl) {
-        // Clear the stored redirect URL
         localStorage.removeItem('redirectAfterLogin');
-        // Redirect to the stored URL
-        router.push(redirectUrl);
-      } else {
-        // Default redirect to home page
-        router.push("/");
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 100);
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
