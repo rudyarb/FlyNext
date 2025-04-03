@@ -2,7 +2,7 @@
 
 import ImageCarousel from './ImageCarousel';
 
-interface HotelDetailsProps {
+export interface HotelDetailsProps {
   name: string;
   address: string;
   city: string;

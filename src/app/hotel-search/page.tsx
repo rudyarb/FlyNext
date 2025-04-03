@@ -1,6 +1,7 @@
 'use client';
 
 import HotelSearch from '@/app/components/HotelSearch';
+import Cart from '@/app/components/Cart';
 
 export default function HotelSearchPage() {
   return (
@@ -23,6 +24,7 @@ export default function HotelSearchPage() {
           </div>
         </div>
       </div>
+      <Cart />
     </main>
   );
 }

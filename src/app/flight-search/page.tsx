@@ -4,6 +4,7 @@ import React from 'react';
 import FlightList from '../components/FlightSearch';
 import { Flight } from '../components/FlightSearch';
 import Link from 'next/link';
+import Cart from '@/app/components/Cart';
 
 export default function FlightSearchPage() {
   const [isClient, setIsClient] = useState(false);
@@ -265,8 +266,13 @@ export default function FlightSearchPage() {
           <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
             Proceed to Checkout
           </Link>
+          <br />
+          <Link href="/hotel-search" className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+            Search Hotels
+          </Link>
         </div>
       </div>
+      <Cart />
     </main>
   );
 }

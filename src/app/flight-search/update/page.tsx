@@ -5,6 +5,7 @@ import FlightList from '../../components/FlightSearch'; // Corrected import path
 import { Flight } from '../../components/FlightSearch'; // Corrected import path
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation'; // Import useSearchParams
+import Cart from '@/app/components/Cart';
 
 const FlightSearchUpdatePage = () => {
   const [isClient, setIsClient] = useState(false);
@@ -275,6 +276,7 @@ const FlightSearchUpdatePage = () => {
           </div>
         </div>
       )}
+      <Cart />
     </div>
   );
 };
