@@ -43,8 +43,18 @@ export default function LoginPage() {
       // ✅ Store userName in localStorage for persistence
       localStorage.setItem("userName", userName);
 
-      // Redirect to home page after login
-      router.push("/");
+      // Check for redirect URL
+      const redirectUrl = localStorage.getItem('redirectAfterLogin');
+      
+      if (redirectUrl) {
+        // Clear the stored redirect URL
+        localStorage.removeItem('redirectAfterLogin');
+        // Redirect to the stored URL
+        router.push(redirectUrl);
+      } else {
+        // Default redirect to home page
+        router.push("/");
+      }
     } catch (err) {
       setError("An error occurred. Please try again.");
     }

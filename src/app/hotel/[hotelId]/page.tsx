@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import HotelDetails from '@/app/components/HotelDetails';
 import RoomTypeCard from '@/app/components/RoomTypeCard';
 
@@ -36,6 +37,21 @@ export default function HotelDetailsPage() {
   const [checkOut, setCheckOut] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
+
+  // Add this handler function after the state declarations
+  const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newCheckIn = e.target.value;
+    setCheckIn(newCheckIn);
+    
+    // If check-out date exists and is now invalid, update it
+    if (checkOut && checkOut <= newCheckIn) {
+      // Set check-out to the day after check-in
+      const nextDay = new Date(newCheckIn);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setCheckOut(nextDay.toISOString().split('T')[0]);
+    }
+  };
 
   // Fetch hotel details
   useEffect(() => {
@@ -80,6 +96,7 @@ export default function HotelDetailsPage() {
       if (!response.ok) throw new Error('Failed to fetch room availability');
       const data = await response.json();
       setRoomAvailability(data.availability);
+      setHasCheckedAvailability(true);
     } catch (error) {
       setError('Failed to check room availability');
       console.error('Error:', error);
@@ -87,6 +104,16 @@ export default function HotelDetailsPage() {
       setLoading(false);
     }
   }
+
+  const sortedRoomTypes = roomAvailability.sort((a, b) => {
+    // First sort by availability
+    if (checkIn && checkOut) {
+      if (a.availableRooms > 0 && b.availableRooms === 0) return -1;
+      if (a.availableRooms === 0 && b.availableRooms > 0) return 1;
+    }
+    // Then sort by price
+    return a.pricePerNight - b.pricePerNight;
+  });
 
   if (!hotelDetails) {
     return (
@@ -108,7 +135,7 @@ export default function HotelDetailsPage() {
           {/* Date Selection Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Check Room Availability
+              Select the length of your stay:
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <label className="block">
@@ -116,9 +143,9 @@ export default function HotelDetailsPage() {
                 <input
                   type="date"
                   value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
+                  onChange={handleCheckInChange}
                   min={new Date().toISOString().split('T')[0]}
-                  className="mt-1 block w-full h-10 px-3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="mt-1 block w-full p-2 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </label>
               <label className="block">
@@ -128,7 +155,7 @@ export default function HotelDetailsPage() {
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
                   min={checkIn || new Date().toISOString().split('T')[0]}
-                  className="mt-1 block w-full h-10 px-3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-900 bg-white"
+                  className="mt-1 block w-full p-2 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </label>
             </div>
@@ -147,12 +174,20 @@ export default function HotelDetailsPage() {
           {/* Room Types Section */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {checkIn && checkOut ? 'Available Room Types' : 'All Room Types'}
+              {checkIn && checkOut ? 'Available Rooms' : 'Rooms'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {roomAvailability.length > 0 ? (
-                roomAvailability.map((room) => (
-                  <RoomTypeCard key={room.id} {...room} />
+                sortedRoomTypes.map((room) => (
+                  <RoomTypeCard 
+                    key={room.id} 
+                    {...room} 
+                    hotelId={hotelId}
+                    showAvailability={!!(checkIn && checkOut && hasCheckedAvailability)}
+                    isAvailable={room.availableRooms > 0}
+                    checkIn={checkIn}
+                    checkOut={checkOut}
+                  />
                 ))
               ) : (
                 <p className="col-span-full text-center text-gray-700 dark:text-gray-300">

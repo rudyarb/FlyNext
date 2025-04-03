@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import { FaCalendarAlt, FaImage, FaArrowRight } from 'react-icons/fa';
 import debounce from 'lodash/debounce';
@@ -29,6 +29,9 @@ interface CityOption {
 
 const HotelSearch: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
   const [city, setCity] = useState('');
@@ -69,6 +72,73 @@ const HotelSearch: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    initializeStateFromUrl();
+  }, []); // Run once on component mount
+
+  const initializeStateFromUrl = () => {
+    const checkIn = searchParams.get('checkIn');
+    const checkOut = searchParams.get('checkOut');
+    const cityParam = searchParams.get('city');
+    const nameParam = searchParams.get('name');
+    const starRatingParam = searchParams.get('starRating');
+    const priceRangeParam = searchParams.get('priceRange');
+    const pageParam = searchParams.get('page');
+
+    // Set date range
+    if (checkIn && checkOut) {
+      setDateRange([new Date(checkIn), new Date(checkOut)]);
+    }
+
+    // Set other parameters
+    if (cityParam) setCity(cityParam);
+    if (nameParam) setName(nameParam);
+    if (starRatingParam) setStarRating(starRatingParam);
+    if (priceRangeParam) setPriceRange(priceRangeParam);
+    if (pageParam) setCurrentPage(parseInt(pageParam));
+
+    // If we have search parameters, trigger the search
+    if (checkIn && checkOut && cityParam) {
+      // Create URL parameters for the initial search
+      const params = new URLSearchParams({
+        checkIn,
+        checkOut,
+        city: cityParam,
+        page: pageParam || '1',
+        limit: limit.toString(),
+      });
+
+      // Add optional parameters
+      if (nameParam) params.set('name', nameParam);
+      if (starRatingParam) params.set('starRating', starRatingParam);
+      if (priceRangeParam) params.set('priceRange', priceRangeParam);
+
+      // Perform the initial search
+      fetchInitialResults(params);
+    }
+  };
+
+  const fetchInitialResults = async (params: URLSearchParams) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/hotel/search?${params}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch hotels');
+      }
+
+      setHotels(data.hotels);
+      setTotalPages(data.pagination.totalPages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDateChange = (update: [Date | null, Date | null]) => {
     setDateRange(update);
@@ -132,8 +202,11 @@ const HotelSearch: React.FC = () => {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     setLoading(true);
     setError('');
     
@@ -168,16 +241,22 @@ const HotelSearch: React.FC = () => {
       return;
     }
 
+    // Create URL parameters
     const params = new URLSearchParams({
       checkIn: checkIn.toISOString(),
       checkOut: checkOut.toISOString(),
       city: city,
       page: currentPage.toString(),
       limit: limit.toString(),
-      ...(name && { name }),
-      ...(starRating && { starRating }),
-      ...(priceRange && { priceRange })
     });
+
+    // Add optional parameters
+    if (name) params.set('name', name);
+    if (starRating) params.set('starRating', starRating);
+    if (priceRange) params.set('priceRange', priceRange);
+
+    // Update URL without reloading the page
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
 
     try {
       const response = await fetch(`/api/hotel/search?${params}`);
@@ -202,6 +281,13 @@ const HotelSearch: React.FC = () => {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    
+    // Create new URLSearchParams with current parameters
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    
+    // Update URL and trigger search
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
     handleSearch(new Event('submit') as any);
   };
 
@@ -225,7 +311,7 @@ const HotelSearch: React.FC = () => {
                   setValidationErrors(prev => ({ ...prev, dates: false }));
                 }}
                 minDate={new Date()}
-                monthsShown={2}
+                monthsShown={1}
                 className={`w-full pl-10 pr-4 py-2 text-black dark:text-white bg-white dark:bg-gray-800 border ${
                   validationErrors.dates 
                     ? 'border-red-500 focus:ring-red-500' 
