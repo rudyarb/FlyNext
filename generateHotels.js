@@ -86,9 +86,30 @@ async function main() {
     hotelOwners.push(hotelOwner);
   }
 
-  // Add these hotel name prefixes
-  const hotelPrefixes = ['Grand', 'Royal', 'Hotel', 'The', 'Plaza', 'Luxury', 'Sunset', 'Marina', 'Metropolitan', 'Continental'];
-  const hotelSuffixes = ['Hotel & Spa', 'Resort', 'Suites', 'Inn', 'Palace', 'Lodge', 'House', 'Residences'];
+  // Replace the existing hotel prefixes and suffixes with real hotel chains
+  const hotelBrands = [
+    'Marriott',
+    'Hilton',
+    'Hyatt',
+    'Sheraton',
+    'Westin',
+    'Four Seasons',
+    'Ritz-Carlton',
+    'InterContinental',
+    'W Hotels',
+    'St. Regis'
+  ];
+
+  const hotelTypes = [
+    'Hotel & Resort',
+    'Grand Hotel',
+    'Luxury Collection',
+    'Executive Hotel',
+    'Resort & Spa',
+    'Boutique Hotel',
+    'Plaza Hotel',
+    'City Center'
+  ];
 
   const hotelImages = [
     'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg',
@@ -134,12 +155,18 @@ async function main() {
     'https://images.pexels.com/photos/7746549/pexels-photo-7746549.jpeg'
   ];
 
-  const hotelLogos = [
-    'https://placehold.co/400x300/FFD700/FFFFFF?text=Luxury+Hotel',
-    'https://placehold.co/400x300/00008B/FFFFFF?text=Premium+Hotel', 
-    'https://placehold.co/400x300/8B0000/FFFFFF?text=Resort+Hotel',
-    'https://placehold.co/400x300/228B22/FFFFFF?text=Grand+Hotel'
-  ];
+  const hotelLogos = {
+    'Marriott': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Marriott_International_logo.svg/2560px-Marriott_International_logo.svg.png',
+    'Hilton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Hilton_Hotels_%26_Resorts_logo.svg/2560px-Hilton_Hotels_%26_Resorts_logo.svg.png',
+    'Hyatt': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Hyatt_logo.svg/2560px-Hyatt_logo.svg.png',
+    'Sheraton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Sheraton_logo.svg/2560px-Sheraton_logo.svg.png',
+    'Westin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Westin_Hotels_%26_Resorts_logo.svg/2560px-Westin_Hotels_%26_Resorts_logo.svg.png',
+    'Four Seasons': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Four_Seasons_Hotels_and_Resorts_logo.svg/2560px-Four_Seasons_Hotels_and_Resorts_logo.svg.png',
+    'Ritz-Carlton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Ritz_Carlton_Logo.svg/2560px-Ritz_Carlton_Logo.svg.png',
+    'InterContinental': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/InterContinental_Hotels_Group_logo.svg/2560px-InterContinental_Hotels_Group_logo.svg.png',
+    'W Hotels': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/W_Hotels_logo.svg/2560px-W_Hotels_logo.svg.png',
+    'St. Regis': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/St._Regis_Hotels_%26_Resorts_logo.svg/2560px-St._Regis_Hotels_%26_Resorts_logo.svg.png'
+  };
 
   // Calculate total number of hotels to be created
   const totalHotels = cities.length * 2;
@@ -151,20 +178,22 @@ async function main() {
       const hotelOwner = hotelOwners[currentOwnerIndex];
       
       // Create hotel first with minimal data
+      const hotelBrand = faker.helpers.arrayElement(hotelBrands);
       const hotel = await prisma.hotel.create({
         data: {
-          name: `${faker.helpers.arrayElement(hotelPrefixes)} ${faker.location.city()} ${faker.helpers.arrayElement(hotelSuffixes)}`,
+          name: `${hotelBrand} ${city.city} ${faker.helpers.arrayElement(hotelTypes)}`,
           logoPath: null,
-          address: faker.location.streetAddress(),
+          // Generate a realistic address
+          address: `${faker.location.streetAddress()} ${faker.location.street()}, ${city.city}, ${faker.location.state({ abbreviated: true })}`,
           city: city.city,
-          starRating: faker.number.int({ min: 1, max: 5 }),
+          starRating: faker.number.int({ min: 3, max: 5 }), // Most chain hotels are 3-5 stars
           imagePaths: [],
           ownerId: hotelOwner.id,
         },
       });
 
-      // Download and save logo
-      const logoUrl = faker.helpers.arrayElement(hotelLogos);
+      // Download and save logo using the corresponding brand logo
+      const logoUrl = hotelLogos[hotelBrand];
       const logoPath = await downloadAndSaveImage(logoUrl, hotel.id, 'logo');
 
       // Download and save hotel images
