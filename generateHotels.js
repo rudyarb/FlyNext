@@ -73,7 +73,7 @@ async function main() {
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
         email: faker.internet.email(),
-        password: faker.internet.password(),
+        password: a,
         role: "ADMIN",
       },
     });
