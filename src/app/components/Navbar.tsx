@@ -50,10 +50,14 @@ const Navbar: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.notifications);
+        // Sort notifications by createdAt in descending order
+        const sortedNotifications = data.notifications.sort(
+          (a: Notification, b: Notification) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setNotifications(sortedNotifications);
 
         // Calculate unread count
-        const unread = data.notifications.filter((notif: Notification) => !notif.read).length;
+        const unread = sortedNotifications.filter((notif: Notification) => !notif.read).length;
         setUnreadCount(unread);
       } else {
         console.error("Failed to fetch notifications");
