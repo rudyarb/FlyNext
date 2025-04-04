@@ -5,18 +5,24 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Logo from "./Logo";
 import DarkModeToggle from "./DarkModeToggle";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaBars, FaTimes } from "react-icons/fa";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, userName, logout, role } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && 
+          !(event.target as Element).closest('.mobile-menu-button')) {
+        setMobileMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -28,6 +34,7 @@ const Navbar: React.FC = () => {
   // Close dropdown when authentication status changes (fix for logout issue)
   useEffect(() => {
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
   }, [isAuthenticated]);
 
   return (
@@ -36,7 +43,8 @@ const Navbar: React.FC = () => {
         <div className="flex items-center space-x-4">
           <Logo />
 
-          <div className="flex items-center space-x-2">
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center space-x-2">
             <Link href="/flight-search" className="px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
               Search Flights
             </Link>
@@ -49,7 +57,8 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 relative">
+        {/* Desktop Auth Section */}
+        <div className="hidden md:flex items-center space-x-4 relative">
           <DarkModeToggle />
           {isAuthenticated ? (
             <>
@@ -65,7 +74,7 @@ const Navbar: React.FC = () => {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden z-50">
                     <Link
                       href="/users/edit-profile"
                       className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -106,7 +115,101 @@ const Navbar: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Mobile Menu Button */}
+        <div className="flex md:hidden items-center space-x-2">
+          <DarkModeToggle />
+          <button 
+            className="mobile-menu-button p-2 focus:outline-none"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div 
+          ref={mobileMenuRef}
+          className="md:hidden bg-white dark:bg-gray-800 shadow-lg"
+        >
+          <div className="px-4 py-3 space-y-3">
+            <Link 
+              href="/flight-search" 
+              className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Search Flights
+            </Link>
+            <Link 
+              href="/hotel-search" 
+              className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Search Hotels
+            </Link>
+            <Link 
+              href="/bookings" 
+              className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              My Bookings
+            </Link>
+            
+            {/* Mobile Auth Options */}
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              {isAuthenticated ? (
+                <>
+                  <div className="px-4 py-2 text-gray-600 dark:text-gray-300">Welcome, {userName}</div>
+                  <Link
+                    href="/users/edit-profile"
+                    className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Edit Profile
+                  </Link>
+                  {role === "ADMIN" && (
+                    <Link
+                      href="/hotel-manage"
+                      className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Manage Hotels
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col space-y-2">
+                  <Link 
+                    href="/users/login" 
+                    className="block px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    href="/users/signup" 
+                    className="block px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-center"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
