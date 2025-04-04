@@ -2,40 +2,43 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const EditProfile = () => {
   const router = useRouter();
-
-  // Local state for token and form data
-  const [token, setToken] = useState<string | null>(null);
+  const { token, userName, role, updateProfile, login, logout } = useAuth(); // Added login and logout for better handling
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
+    role: "USER",
   });
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Only fetch the token from localStorage on the client-side
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) {
-        setToken(storedToken);
-      } else {
-        setMessage("You must be logged in to edit your profile.");
-      }
+    if (userName) {
+      setFormData((prevData) => ({
+        ...prevData,
+        firstName: userName,
+        role: role || "USER",
+      }));
     }
-  }, []);
+  }, [userName, role]);
 
-  // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle form submission (PUT request to update profile)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setProfilePicture(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -48,42 +51,64 @@ const EditProfile = () => {
     }
 
     try {
+      const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password, // Include password updates
+        role: formData.role,
+      };
+
       const res = await fetch("/api/users/profile", {
-        method: "PUT", // Use PUT request to update profile
+        method: "PUT",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Correct way to send token in Authorization header
         },
-        body: JSON.stringify(formData), // Send the updated form data
+        body: JSON.stringify(updateData),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Update failed.");
+      }
 
-      if (!res.ok) throw new Error(data.error || "Update failed");
+      const responseData = await res.json();
+      const updatedName = responseData?.firstName || formData.firstName;
+      const updatedRole = responseData?.role || formData.role;
+      const newToken = responseData?.token; // Check if the response includes an updated token
+
+      if (newToken) {
+        login(newToken, updatedName, updatedRole); // Re-login with new token and updated credentials
+      } else {
+        updateProfile(updatedName, updatedRole); // Update profile without token change
+      }
 
       setMessage("Profile updated successfully!");
-      setTimeout(() => router.push("/dashboard"), 1500); // Redirect after update
-
+      setTimeout(() => router.push("/"), 1500);
     } catch (error) {
-      console.error(error);
-      if (error instanceof Error) {
-        setMessage(error.message);
-      } else {
-        setMessage("An unexpected error occurred.");
-      }      
+      setMessage(error instanceof Error ? error.message : "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white text-center">Edit Profile</h2>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full mx-auto space-y-8">
+        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center">Edit Profile</h2>
+        {message && (
+          <p
+            className={`text-center ${
+              message.includes("successfully") ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {message}
+          </p>
+        )}
 
-        {message && <p className="text-center mt-2 text-red-500">{message}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <input
             type="text"
             name="firstName"
@@ -109,7 +134,6 @@ const EditProfile = () => {
             onChange={handleChange}
             placeholder="Email"
             className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-            disabled // Disable to avoid accidental changes to email
           />
 
           <input
@@ -127,6 +151,26 @@ const EditProfile = () => {
             value={formData.password}
             onChange={handleChange}
             placeholder="New Password (leave blank to keep current)"
+            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+          />
+
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
+          >
+            <option value="USER">User</option>
+            <option value="ADMIN">Hotel Manager (Admin)</option>
+          </select>
+
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Profile Picture (optional)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
             className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
           />
 

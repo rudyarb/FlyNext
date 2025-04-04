@@ -10,6 +10,7 @@ interface AuthContextType {
   role: string | null;
   login: (token: string, userName: string, role: string) => void;
   logout: () => void;
+  updateProfile: (updatedUserName: string, updatedRole?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const router = useRouter();
 
+  // Sync state with localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUserName = localStorage.getItem("userName");
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (newToken: string, newUserName: string, newRole: string) => {
+    console.log("Login called with:", { newToken, newUserName, newRole }); // Debugging
     setToken(newToken);
     setUserName(newUserName);
     setRole(newRole);
@@ -45,17 +48,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    console.log("Logout called"); // Debugging
     setToken(null);
     setUserName(null);
-    setRole(null)
+    setRole(null);
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     localStorage.removeItem("role");
     router.push("/"); // Redirect to login page
   };
 
+  const updateProfile = (updatedUserName: string, updatedRole?: string) => {
+    console.log("UpdateProfile called with:", { updatedUserName, updatedRole }); // Debugging
+    if (updatedUserName) {
+      setUserName(updatedUserName);
+      localStorage.setItem("userName", updatedUserName);
+    }
+    if (updatedRole) {
+      setRole(updatedRole);
+      localStorage.setItem("role", updatedRole);
+    }
+  };
+
+  // Debugging state updates
+  useEffect(() => {
+    console.log("AuthContext state updated:", { token, userName, role });
+  }, [token, userName, role]);
+
   return (
-    <AuthContext.Provider value={{ token, isAuthenticated: !!token, userName, role, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        isAuthenticated: !!token,
+        userName,
+        role,
+        login,
+        logout,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
