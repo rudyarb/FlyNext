@@ -19,8 +19,9 @@ interface UserHeader {
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
+    const { id: bookingId } = await params; // Await the params before using
     const userHeader = request.headers.get("x-user");
 
     if (!userHeader) {
@@ -49,7 +50,6 @@ export async function PUT(
     }
 
     try {
-        const { id: bookingId } = params;
         const body: RequestBody = await request.json();
         const { creditCard } = body;
 
@@ -135,8 +135,9 @@ export async function PUT(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
+    const { id: bookingId } = await params; // Await the params before using
     const userHeader = request.headers.get("x-user");
 
     if (!userHeader) {
@@ -165,8 +166,6 @@ export async function DELETE(
     }
 
     try {
-        const { id: bookingId } = params;
-
         await prisma.booking.update({
             where: { id: bookingId },
             data: {

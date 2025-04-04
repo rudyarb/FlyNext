@@ -23,13 +23,11 @@ async function verifyHotelOwner(request: NextRequest, hotelId: string): Promise<
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  // Await the params to ensure they're resolved
-  const { id: hotelId } = await Promise.resolve(params);
+  const { id: hotelId } = await params;
 
   try {
-    // Verify hotel owner
     const isAuthorized = await verifyHotelOwner(request, hotelId);
     if (!isAuthorized) {
       return NextResponse.json(
@@ -43,60 +41,39 @@ export async function GET(
     const endDate = searchParams.get('endDate');
     const roomType = searchParams.get('roomType');
 
-    // Base query conditions
-    let whereClause: any = {
-      hotelId: hotelId,
-    };
+    let whereClause: any = { hotelId };
 
-    // Add date range filter if provided
     if (startDate || endDate) {
       whereClause.OR = [
         {
           checkInDate: {
             ...(startDate && { gte: new Date(startDate) }),
-            ...(endDate && { lte: new Date(endDate) })
-          }
+            ...(endDate && { lte: new Date(endDate) }),
+          },
         },
         {
           checkOutDate: {
             ...(startDate && { gte: new Date(startDate) }),
-            ...(endDate && { lte: new Date(endDate) })
-          }
-        }
+            ...(endDate && { lte: new Date(endDate) }),
+          },
+        },
       ];
     }
 
-    // Add room type filter if provided
     if (roomType) {
-      whereClause.roomType = {
-        type: roomType
-      };
+      whereClause.roomType = { type: roomType };
     }
 
     const bookings = await prisma.hotelBooking.findMany({
       where: whereClause,
       include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        },
-        roomType: {
-          select: {
-            type: true,
-            pricePerNight: true
-          }
-        }
+        user: { select: { firstName: true, lastName: true, email: true } },
+        roomType: { select: { type: true, pricePerNight: true } },
       },
-      orderBy: {
-        checkInDate: 'desc'
-      }
+      orderBy: { checkInDate: 'desc' },
     });
 
     return NextResponse.json({ bookings });
-
   } catch (error) {
     console.error('Error fetching bookings:', error);
     return NextResponse.json(
@@ -108,31 +85,23 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  const { id: hotelId } = await Promise.resolve(params);
+  const { id: hotelId } = await params;
 
   try {
-    // Get user from header
     const userHeader = request.headers.get("x-user");
     if (!userHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const validatedUser = JSON.parse(userHeader);
     const userId = validatedUser.id;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Invalid user data" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid user data" }, { status: 401 });
     }
 
-    // Parse request body
     const body = await request.json();
     const { roomTypeId, checkInDate, checkOutDate } = body;
 
@@ -143,7 +112,6 @@ export async function POST(
       );
     }
 
-    // Verify dates are valid
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
     const now = new Date();
@@ -155,34 +123,20 @@ export async function POST(
       );
     }
 
-    // Check room type exists and belongs to this hotel
     const roomType = await prisma.roomType.findFirst({
-      where: {
-        id: roomTypeId,
-        hotelId: hotelId
-      },
+      where: { id: roomTypeId, hotelId },
       include: {
         hotel: true,
         hotelBookings: {
           where: {
             status: "CONFIRMED",
             OR: [
-              {
-                checkInDate: {
-                  lte: checkOut,
-                  gte: checkIn
-                }
-              },
-              {
-                checkOutDate: {
-                  lte: checkOut,
-                  gte: checkIn
-                }
-              }
-            ]
-          }
-        }
-      }
+              { checkInDate: { lte: checkOut, gte: checkIn } },
+              { checkOutDate: { lte: checkOut, gte: checkIn } },
+            ],
+          },
+        },
+      },
     });
 
     if (!roomType) {
@@ -192,7 +146,6 @@ export async function POST(
       );
     }
 
-    // Check availability
     const bookedRooms = roomType.hotelBookings.length;
     if (bookedRooms >= roomType.quantity) {
       return NextResponse.json(
@@ -201,59 +154,36 @@ export async function POST(
       );
     }
 
-    // Create booking
     const booking = await prisma.hotelBooking.create({
       data: {
-        hotelId: hotelId,
+        hotelId,
         roomId: roomTypeId,
-        userId: userId,
+        userId,
         checkInDate: checkIn,
         checkOutDate: checkOut,
-        status: "CONFIRMED"
+        status: "CONFIRMED",
       },
       include: {
         hotel: true,
         roomType: true,
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true
-          }
-        }
-      }
+        user: { select: { firstName: true, lastName: true, email: true } },
+      },
     });
 
-    // Notify hotel owner
-    const ownerUserId = await getUserIdByHotelOwnerId(roomType.hotel.ownerId);
-    if (ownerUserId) {
-      await sendNotification(
-        ownerUserId,
-        `New booking received for ${roomType.type} room at ${roomType.hotel.name} from ${booking.user.firstName} ${booking.user.lastName}`
-      );
-    }
-
     return NextResponse.json(
-      { 
+      {
         message: "Booking created successfully",
         booking: {
           id: booking.id,
           checkInDate: booking.checkInDate,
           checkOutDate: booking.checkOutDate,
           status: booking.status,
-          hotel: {
-            id: booking.hotel.id,
-            name: booking.hotel.name
-          },
-          roomType: {
-            id: booking.roomType.id,
-            type: booking.roomType.type
-          }
-        }
+          hotel: { id: booking.hotel.id, name: booking.hotel.name },
+          roomType: { id: booking.roomType.id, type: booking.roomType.type },
+        },
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error('Error creating booking:', error);
     return NextResponse.json(

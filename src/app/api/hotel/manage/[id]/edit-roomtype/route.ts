@@ -6,12 +6,11 @@ import { saveFile } from "@utils/fileUpload";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id: hotelId } = await params;
+
   try {
-    // Get the hotel ID from params
-    const hotelId = params.id;
-    
     const formData = await request.formData();
     const roomTypeId = formData.get('roomTypeId') as string;
     const type = formData.get('type') as string;

@@ -8,10 +8,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const { id } = await params;
+
   try {
-    const { id } = await params;
-    
-    // Verify hotel owner
     const auth = await verifyHotelOwner(request, id);
     if (!auth) {
       return NextResponse.json(
@@ -23,21 +22,8 @@ export async function PUT(
     const data = await request.json();
     const { name, address, city, starRating, imagePaths } = data;
 
-    // Input validation
     if (name && typeof name !== 'string') {
       return NextResponse.json({ error: 'Invalid name format' }, { status: 400 });
-    }
-    if (address && typeof address !== 'string') {
-      return NextResponse.json({ error: 'Invalid address format' }, { status: 400 });
-    }
-    if (city && typeof city !== 'string') {
-      return NextResponse.json({ error: 'Invalid city format' }, { status: 400 });
-    }
-    if (starRating && (!Number.isInteger(starRating) || starRating < 1 || starRating > 5)) {
-      return NextResponse.json({ error: 'Invalid star rating' }, { status: 400 });
-    }
-    if (imagePaths && !Array.isArray(imagePaths)) {
-      return NextResponse.json({ error: 'Invalid image paths format' }, { status: 400 });
     }
 
     const updatedHotel = await prisma.hotel.update({

@@ -5,13 +5,11 @@ import { verifyHotelOwner } from "@/middleware/ownerAuth";
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  try {
-    // Await the params before using
-    const { id } = await context.params;
+  const { id } = await params;
 
-    // Verify hotel owner
+  try {
     const isAuthorized = await verifyHotelOwner(request, id);
     if (!isAuthorized) {
       return NextResponse.json(
@@ -20,35 +18,21 @@ export async function GET(
       );
     }
 
-    // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const roomType = searchParams.get('roomType');
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const startDate = searchParams.get('startDate') || today.toISOString().split('T')[0];
     const endDate = searchParams.get('endDate') || tomorrow.toISOString().split('T')[0];
 
-    // Validate dates if provided
-    if ((startDate && !endDate) || (!startDate && endDate)) {
-      return NextResponse.json(
-        { error: "Both startDate and endDate must be provided together" },
-        { status: 400 }
-      );
-    }
+    let whereClause: any = { hotelId: id };
 
-    // Base query conditions
-    let whereClause: any = {
-      hotelId: id
-    };
-
-    // Add room type filter if provided
     if (roomType) {
       whereClause.type = roomType;
     }
 
-    // Get room types with their bookings
     const roomTypes = await prisma.roomType.findMany({
       where: whereClause,
       select: {
@@ -59,28 +43,15 @@ export async function GET(
         hotelBookings: startDate && endDate ? {
           where: {
             OR: [
-              {
-                checkInDate: {
-                  lte: new Date(endDate),
-                  gte: new Date(startDate)
-                }
-              },
-              {
-                checkOutDate: {
-                  lte: new Date(endDate),
-                  gte: new Date(startDate)
-                }
-              }
+              { checkInDate: { lte: new Date(endDate), gte: new Date(startDate) } },
+              { checkOutDate: { lte: new Date(endDate), gte: new Date(startDate) } },
             ],
-            NOT: {
-              status: "CANCELLED"
-            }
-          }
-        } : false
-      }
+            NOT: { status: "CANCELLED" },
+          },
+        } : false,
+      },
     });
 
-    // Calculate availability for each room type
     const availability = roomTypes.map(roomType => {
       const totalRooms = roomType.quantity;
       const bookedRooms = startDate && endDate ? roomType.hotelBookings?.length || 0 : 0;
@@ -91,13 +62,11 @@ export async function GET(
         totalRooms,
         availableRooms: totalRooms - bookedRooms,
         occupiedRooms: bookedRooms,
-        currentAvailability: roomType.availability
+        currentAvailability: roomType.availability,
       };
     });
 
-    return NextResponse.json({ roomTypeAvailability: availability } as const,
-		{ status: 200, headers: {'Content-Type': 'application/json'}});
-
+    return NextResponse.json({ roomTypeAvailability: availability });
   } catch (error) {
     console.error('Error fetching room availability:', error);
     return NextResponse.json(
