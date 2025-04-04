@@ -36,12 +36,14 @@ export default function LoginPage() {
       // Extract firstName from JWT
       const decodedPayload = JSON.parse(atob(accessToken.split(".")[1])); 
       const userName = decodedPayload.firstName;
+      const role = decodedPayload.role;
 
       // Set the username and token in the AuthContext
-      login(accessToken, userName);
+      login(accessToken, userName, role);
 
       // Store userName in localStorage
       localStorage.setItem("userName", userName);
+      localStorage.setItem("role", role);
 
       // Always redirect to home page first
       router.push("/");
