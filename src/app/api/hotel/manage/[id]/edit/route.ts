@@ -2,7 +2,6 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { verifyHotelOwner } from "@/middleware/ownerAuth";
-import { saveFile } from "@utils/fileUpload";
 import { uploadToCloudinary } from "@utils/cloudinary";
 
 export async function PUT(

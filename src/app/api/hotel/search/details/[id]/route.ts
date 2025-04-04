@@ -24,15 +24,15 @@ export async function GET(
                 address: true,
                 city: true,
                 starRating: true,
-                logoPath: true,
-                imagePaths: true,
+                logoUrl: true,
+                imageUrls: true,
                 roomTypes: {
                     select: {
                         id: true,
                         type: true,
                         amenities: true,
                         pricePerNight: true,
-                        images: true,
+                        imageUrls: true,
                         quantity: true,
                         availability: true
                     }

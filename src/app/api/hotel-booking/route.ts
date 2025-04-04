@@ -64,8 +64,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                         address: true,
                         city: true,
                         starRating: true,
-                        logoPath: true,
-                        imagePaths: true
+                        logoUrl: true,
+                        imageUrls: true
                     }
                 },
                 roomType: {

@@ -20,7 +20,7 @@ interface HotelResponse {
   city: string;
   address: string;
   starRating: number;
-  logoPath: string | null;
+  logoUrl: string | null;
   startingPrice: number;
   availableRooms: {
     id: string;
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         city: true,
         address: true,
         starRating: true,
-        logoPath: true,
+        logoUrl: true,
         roomTypes: {
           select: {
             id: true,
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           city: hotel.city,
           address: hotel.address,
           starRating: hotel.starRating,
-          logoPath: hotel.logoPath,
+          logoUrl: hotel.logoUrl,
           startingPrice,
           availableRooms
         };

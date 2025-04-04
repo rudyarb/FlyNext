@@ -43,7 +43,7 @@ export async function GET(
             type: roomType.type,
             amenities: roomType.amenities,
             pricePerNight: roomType.pricePerNight,
-            images: roomType.images,
+            imagesUrls: roomType.imageUrls,
             availableRooms: Math.max(0, roomType.quantity - roomType.hotelBookings.length),
             totalRooms: roomType.quantity
         }));
