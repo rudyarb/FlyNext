@@ -4,10 +4,63 @@ import path from 'path';
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-export async function GET(request) {
+// Define interfaces for better type organization
+interface UserHeader {
+  id: string;
+  email: string;
+  role: string;
+}
+
+interface Flight {
+  flightId: string;
+  flightNumber: string;
+  departureTime: string;
+  originCode: string;
+  originName: string;
+  originCity: string;
+  originCountry: string;
+  arrivalTime: string;
+  destinationCode: string;
+  destinationName: string;
+  destinationCity: string;
+  destinationCountry: string;
+  duration: number;
+  price: number;
+  currency: string;
+  availableSeats: number;
+  status: string;
+  airlineName: string;
+}
+
+interface Hotel {
+  hotelId: string;
+  roomId: string;
+  bookingDate: Date;
+  checkInDate: Date;
+  checkOutDate: Date;
+  status: string;
+}
+
+interface InvoiceData {
+  invoiceNumber: string;
+  bookingDate: Date;
+  userFirstName: string;
+  userLastName: string;
+  itineraryId: string;
+  flightsInfo: Flight[];
+  hotelsInfo: Hotel[];
+}
+
+interface User {
+  firstName: string;
+  lastName: string;
+  id: string;
+}
+
+export async function GET(request: Request): Promise<Response> {
   // Uncomment this when auth is done
   // Extract user object from headers
-  const userHeader = request.headers.get("x-user");
+  const userHeader: string | null = request.headers.get("x-user");
 
   // Check if the userHeader is missing or invalid
   if (!userHeader) {
@@ -18,7 +71,7 @@ export async function GET(request) {
       );
   }
 
-  let validatedUser;
+  let validatedUser: UserHeader;
   try {
       validatedUser = JSON.parse(userHeader); // Try to parse the header
       // console.log("Parsed user:", validatedUser);
@@ -30,7 +83,7 @@ export async function GET(request) {
       );
   }
 
-  const userId = validatedUser.id; // Ensure ID is extracted correctly
+  const userId: string = validatedUser.id; // Ensure ID is extracted correctly
   // console.log("User ID:", userId);
 
   // Ensure userId is valid
@@ -45,6 +98,13 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
     const bookingId = url.searchParams.get('bookingId');
+
+    if (!bookingId) {
+      return new Response(JSON.stringify({error: "Booking ID is required"}), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Get booking from DB
     const booking = await prisma.booking.findUnique({
@@ -66,9 +126,7 @@ export async function GET(request) {
         });
     }
 
-    // Authenicate the user
-    // DELETE this when auth done
-    // const userId = "2e51126c-b69c-4fc8-8b82-e94e87ac7804"; // Replace with actual userId from auth token
+    // Authenticate the user
     if (booking.userId != userId) {
       return new Response(
           JSON.stringify({ error: "Unauthorized or Invalid token" }),
@@ -79,15 +137,30 @@ export async function GET(request) {
     // Found booking by bookingId
     const { itinerary, bookingDate } = booking;
 
-    const { flights, hotels } = itinerary;
-    const itineraryId = itinerary.id;
+    if (!itinerary) {
+      return new Response(JSON.stringify({error: "Itinerary not found"}), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    const user = await prisma.user.findUnique({
+    const { flights, hotels } = itinerary;
+    const itineraryId: string = itinerary.id;
+
+    const user: User | null = await prisma.user.findUnique({
         where: { id: userId }
-      });  // Find user by userId
-    const { firstName, lastName } = user;  // get their first/last name
+    });
     
-    const flightsInfo = flights.map(flight => ({
+    if (!user) {
+      return new Response(JSON.stringify({error: "User not found"}), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    
+    const { firstName, lastName } = user;
+    
+    const flightsInfo: Flight[] = flights.map(flight => ({
       flightId: flight.flightId,
       flightNumber: flight.flightNumber,
       departureTime: flight.departureTime,
@@ -107,37 +180,36 @@ export async function GET(request) {
       status: flight.status,
       airlineName: flight.airlineName
     }));
-    const hotelsInfo = hotels.map(hotel => ({
+
+    const hotelsInfo: Hotel[] = hotels.map(hotel => ({
       hotelId: hotel.hotelId,
-      roomTypeId: hotel.roomTypeId,
+      roomId: hotel.roomId,
       bookingDate: hotel.bookingDate,
       checkInDate: hotel.checkInDate,
       checkOutDate: hotel.checkOutDate,
       status: hotel.status
     }));
 
-    // OpenAI. (2025). ChatGPT (Version 4). Retrieved from https://openai.com
-
     // Create doc object
     const doc = new PDFDocument({
       margin: 50,
-      font: path.join(process.cwd(), 'public', 'fonts', 'Roboto-VariableFont_wdth,wght.ttf'), // <-- Directly specify font on creation
+      font: path.join(process.cwd(), 'public', 'fonts', 'Roboto-VariableFont_wdth,wght.ttf'),
     });
 
-    const buffers = [];
+    const buffers: Buffer[] = [];
     // Pipe PDF data to buffer
-    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('data', (chunk: Buffer) => buffers.push(chunk));
     doc.on('end', () => console.log("PDF Generation Complete!"));
 
-    // Collect booking details (example data)
-    const invoiceData = {
+    // Collect booking details
+    const invoiceData: InvoiceData = {
       invoiceNumber: `INV-${bookingId}`,
-      bookingDate: bookingDate,
+      bookingDate,
       userFirstName: firstName,
       userLastName: lastName,
-      itineraryId: itineraryId,
-      flightsInfo: flightsInfo,
-      hotelsInfo: hotelsInfo
+      itineraryId,
+      flightsInfo,
+      hotelsInfo
     };
 
     // Generate Invoice
@@ -172,7 +244,7 @@ export async function GET(request) {
     invoiceData.hotelsInfo.forEach((hotel) => {
         doc.moveDown();
         doc.text(`  Hotel ID: ${hotel.hotelId}`);
-        doc.text(`  Room Type ID: ${hotel.roomTypeId}`);
+        doc.text(`  Room ID: ${hotel.roomId}`);
         doc.text(`  Booking Date: ${hotel.bookingDate}`);
         doc.text(`  Check-in Date: ${hotel.checkInDate}`);
         doc.text(`  Check-out Date: ${hotel.checkOutDate}`);
@@ -181,35 +253,36 @@ export async function GET(request) {
 
     doc.end();
 
-    const pdfBuffer = await new Promise((resolve) => {
+    const pdfBuffer: Buffer = await new Promise((resolve) => {
       doc.on('end', () => resolve(Buffer.concat(buffers)));
     });
 
     console.log("PDF Buffer Length:", pdfBuffer.length);
 
     // Set up the file path and directory
-    const directoryPath = path.join(process.cwd(), 'pdfs');
+    const directoryPath: string = path.join(process.cwd(), 'pdfs');
     
     // Make sure the directory exists
     await fs.promises.mkdir(directoryPath, { recursive: true });
     
-    const filePath = path.join(directoryPath, `booking_${bookingId}.pdf`);
+    const filePath: string = path.join(directoryPath, `booking_${bookingId}.pdf`);
     
     // Write the PDF to the file system
     await fs.promises.writeFile(filePath, pdfBuffer);
 
     return new Response(pdfBuffer, {
       status: 200,
-      headers: { "Content-Type": "application/pdf",
+      headers: { 
+        "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="booking_${bookingId}.pdf"`
       }
     });
   } 
-  catch (error) {
+  catch (error: any) {
     console.log(error.message);
     return new Response(JSON.stringify({error: "Invoice was not able to be generated"}), {
         status: 400,
         headers: { "Content-Type": "application/json" }
-        });
-    }
+    });
+  }
 }

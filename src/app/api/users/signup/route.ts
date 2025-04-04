@@ -4,19 +4,34 @@ import { writeFile } from "fs/promises";
 import { join } from "path";
 import { NextResponse } from "next/server";
 
-export async function POST(req) {
+// Define interfaces
+interface UserResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'ADMIN' | 'USER';
+  profilePic: string | null;
+}
+
+interface ApiResponse {
+  message: string;
+  user?: UserResponse;
+}
+
+export async function POST(req: Request): Promise<NextResponse<ApiResponse>> {
   try {
     // Parse form data instead of JSON
     const formData = await req.formData();
 
     // Extract fields from form data
-    const firstName = formData.get("firstName");
-    const lastName = formData.get("lastName");
-    const email = formData.get("email");
-    const password = formData.get("password");
-    const phone = formData.get("phone") || null;
-    const role = formData.get("role");
-    const profilePicture = formData.get("profilePicture"); // File object
+    const firstName = formData.get("firstName") as string | null;
+    const lastName = formData.get("lastName") as string | null;
+    const email = formData.get("email") as string | null;
+    const password = formData.get("password") as string | null;
+    const phone = formData.get("phone") as string | null;
+    const role = formData.get("role") as "ADMIN" | "USER" | null;
+    const profilePicture = formData.get("profilePicture") as File | null;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !role) {
@@ -24,7 +39,7 @@ export async function POST(req) {
     }
 
     // Validate role
-    const allowedRoles = ["ADMIN", "USER"];
+    const allowedRoles = ["ADMIN", "USER"] as const;
     if (!allowedRoles.includes(role)) {
       return NextResponse.json({ message: "Invalid role. Allowed roles: ADMIN, USER." }, { status: 400 });
     }
@@ -36,7 +51,7 @@ export async function POST(req) {
     }
 
     // Save profile picture (if provided)
-    let profilePicUrl = null;
+    let profilePicUrl: string | null = null;
     if (profilePicture && profilePicture.name) {
       const fileBuffer = await profilePicture.arrayBuffer();
       const filePath = join(process.cwd(), "public/uploads", profilePicture.name);
@@ -63,7 +78,7 @@ export async function POST(req) {
         role: true,
         profilePic: true,
       },
-    });
+    }) as UserResponse;
 
     // If ADMIN, create hotel owner entry
     if (role === "ADMIN") {

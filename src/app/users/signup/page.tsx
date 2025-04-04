@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaImage, FaHotel } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaHotel } from "react-icons/fa";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -13,14 +13,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("USER");
   const [phone, setPhone] = useState("");
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [error, setError] = useState("");
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setProfilePicture(e.target.files[0]);
-    }
-  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +25,6 @@ export default function SignUpPage() {
     formData.append("password", password);
     formData.append("role", role);
     if (phone) formData.append("phone", phone);
-    if (profilePicture) formData.append("profilePicture", profilePicture);
 
     try {
       const response = await fetch("/api/users/signup", {
@@ -208,25 +200,6 @@ export default function SignUpPage() {
                     onChange={(e) => setPhone(e.target.value)}
                     className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Phone number (optional)"
-                  />
-                </div>
-              </div>
-
-              {/* Profile Picture Upload */}
-              <div>
-                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Profile Picture (optional)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaImage className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="profilePicture"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
                   />
                 </div>
               </div>

@@ -1,8 +1,13 @@
 import { verifyToken } from "@utils/auth";
 
-export async function GET(req) {
+interface UserPayload {
+  role: string;
+}
+
+export async function GET(req: Request): Promise<Response> {
   // Verify the token and get the payload
-  const user = verifyToken(req);
+  const payload = await verifyToken(req);
+  const user: UserPayload | null = payload && 'role' in payload ? payload as unknown as UserPayload : null;
 
   // If the token is invalid or missing, it will return null
   if (!user || user.role !== "ADMIN") {

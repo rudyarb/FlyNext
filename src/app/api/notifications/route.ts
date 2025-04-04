@@ -2,45 +2,65 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 
 // Get all of a user's notifications
-export async function GET(request, { params }) {
+// Define interfaces for better type organization
+interface NotificationResponse {
+	notifications?: Notification[];
+	error?: string;
+}
+
+interface UserHeader {
+	id: string;
+	email: string;
+	role: string;
+}
+
+interface Notification {
+	id: string;
+	userId: string;
+	message: string;
+	read: boolean;
+	createdAt: Date;
+}
+
+export async function GET(request: Request): Promise<NextResponse<NotificationResponse>> {
 	try {
 		// Extract user object from headers
-		const userHeader = request.headers.get("x-user");
+		const userHeader: string | null = request.headers.get("x-user");
 
 		// Check if the userHeader is missing or invalid
 		if (!userHeader) {
 			// console.log("User header is missing or empty");
-			return new Response(
-				JSON.stringify({ error: "Unauthorized or Invalid token" }),
-				{ status: 401, headers: { "Content-Type": "application/json" } }
+			return NextResponse.json(
+				{ error: "Unauthorized or Invalid token" },
+				{ status: 401 }
 			);
 		}
 
-		let validatedUser;
+		let validatedUser: UserHeader;
 		try {
 			validatedUser = JSON.parse(userHeader); // Try to parse the header
 			// console.log("Parsed user:", validatedUser);
 		} catch (error) {
 			// console.log("Error parsing user header:", error);
-			return new Response(
+			return new NextResponse(
 				JSON.stringify({ error: "Invalid user data" }),
 				{ status: 401, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		const userId = validatedUser.id; // Ensure ID is extracted correctly
+		const userId: string = validatedUser.id; // Ensure ID is extracted correctly
 		// console.log("User ID:", userId);
 
 		// Ensure userId is valid
 		if (!userId) {
 			// console.log("User ID is invalid");
-			return new Response(
+			return new NextResponse(
 				JSON.stringify({ error: "Unauthorized or Invalid token" }),
 				{ status: 401, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		const notifications = await prisma.notification.findMany({
+		const notifications: Notification[] = await prisma.notification.findMany({
 			where: {
 				userId: userId,
 			},
@@ -48,20 +68,30 @@ export async function GET(request, { params }) {
 
 		return NextResponse.json({ notifications }, { status: 200 });
 	} catch (error) {
-		return NextResponse.json( { error: "Internal Server Error" }, { status: 500 });
+		return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
 	}
 }
 
 // Mark a user's notification as read
-export async function PUT(request, { params }) {
+// Define interfaces for better type organization
+interface UpdateNotificationRequest {
+	notificationId: string;
+}
+
+interface UpdateNotificationResponse {
+	notifications?: { count: number };
+	error?: string;
+}
+
+export async function PUT(request: Request): Promise<NextResponse<UpdateNotificationResponse>> {
 	try {
-		const { notificationId }  = await request.json();
-		const userHeader = request.headers.get("x-user");
+		const { notificationId }: UpdateNotificationRequest = await request.json();
+		const userHeader: string | null = request.headers.get("x-user");
 		if (!userHeader) {
 			return NextResponse.json({ error: "Unauthorized or Invalid token" }, { status: 401 });
 		}
-		const user = JSON.parse(userHeader);
-		const userId = user.id;
+		const user: UserHeader = JSON.parse(userHeader);
+		const userId: string = user.id;
 
 		const read = await prisma.notification.updateMany({
 			where: {

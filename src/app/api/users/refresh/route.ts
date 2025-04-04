@@ -2,10 +2,27 @@ import { verifyRefresh} from "@utils/auth";
 import { generateToken } from "@utils/auth";
 import { NextResponse } from "next/server";
 
-export async function POST(req) {
+// Define interfaces for the decoded token payload
+interface DecodedToken {
+  id: string;
+  email: string;
+  role: 'ADMIN' | 'USER';
+}
+
+// Define interface for the request body
+interface RefreshRequestBody {
+  refreshToken: string;
+}
+
+// Define interface for the response
+interface TokenResponse {
+  accessToken: string;
+}
+
+export async function POST(req: Request): Promise<NextResponse<TokenResponse | { message: string }>> {
   try {
     // Extract the refresh token from the request body
-    const { refreshToken } = await req.json();
+    const { refreshToken } = await req.json() as RefreshRequestBody;
 
     // Check is refresh token is included
     if (!refreshToken) {
@@ -22,7 +39,7 @@ export async function POST(req) {
     }
 
     // Create a new access token using the same payload
-    const { id, email, role } = decoded;
+    const { id, email, role } = decoded as DecodedToken;
 
     // Generate new access token
     const newAccessToken = generateToken({ id, email, role }, "access");
@@ -33,7 +50,7 @@ export async function POST(req) {
       { status: 200 }
     );
   }
-  catch{
+  catch {
     // Handle any unexpected errors
     return NextResponse.json({ message: "Error refreshing token" }, { status: 400 });
   }

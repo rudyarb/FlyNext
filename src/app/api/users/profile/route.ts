@@ -2,24 +2,45 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { hashPassword } from "@utils/auth";
 
-export async function PUT(req) {
+// Define interfaces
+interface ValidatedUser {
+  id: string;
+}
+
+interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  phone?: string;
+  profilePic?: string;
+  role?: 'ADMIN' | 'USER';
+}
+
+interface UpdateProfileResponse {
+  message: string;
+  updatedUser?: any;
+  error?: string;
+}
+
+export async function PUT(req: Request): Promise<NextResponse<UpdateProfileResponse>> {
   try {
     // Extract user object from headers
     const userHeader = req.headers.get("x-user");
 
     // Check if the userHeader is missing or invalid
     if (!userHeader) {
-      return new Response(
+      return new NextResponse(
         JSON.stringify({ error: "Unauthorized or Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    let validatedUser;
+    let validatedUser: ValidatedUser;
     try {
       validatedUser = JSON.parse(userHeader); // Try to parse the header
     } catch (error) {
-      return new Response(
+      return new NextResponse(
         JSON.stringify({ error: "Invalid user data" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
@@ -29,19 +50,19 @@ export async function PUT(req) {
 
     // Ensure userId is valid
     if (!userId) {
-      return new Response(
+      return new NextResponse(
         JSON.stringify({ error: "Unauthorized or Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
     // Extract profile information from request body
-    const { firstName, lastName, email, password, phone, profilePic, role } = await req.json();
+    const { firstName, lastName, email, password, phone, profilePic, role }: UpdateProfileRequest = await req.json();
 
     // Ensure at least one field is specified to edit the profile
     if (!firstName && !lastName && !email && !password && !phone && !profilePic && !role) {
       return NextResponse.json(
-        { error: "At least one field is required" },
+        { message: "Update failed", error: "At least one field is required" },
         { status: 400 }
       );
     }
@@ -61,7 +82,7 @@ export async function PUT(req) {
     }
 
     // Allowed roles
-    const allowedRoles = ["ADMIN", "USER"];
+    const allowedRoles: Array<'ADMIN' | 'USER'> = ["ADMIN", "USER"];
     if (role && !allowedRoles.includes(role)) {
       return NextResponse.json(
         { message: "Invalid role. Allowed roles: ADMIN, USER." },
@@ -70,11 +91,11 @@ export async function PUT(req) {
     }
 
     // Build the update data object dynamically
-    const updateData = {};
+    const updateData: UpdateProfileRequest = {};
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (email) updateData.email = email;
-    if (password) updateData.password = hashPassword(password); // Hash the password if provided
+    if (password) updateData.password = hashPassword(password);
     if (phone) updateData.phone = phone;
     if (profilePic) updateData.profilePic = profilePic;
     if (role) updateData.role = role;
@@ -93,7 +114,7 @@ export async function PUT(req) {
   } catch (error) {
     console.error("Error updating profile:", error);
     return NextResponse.json(
-      { error: "Something went wrong, could not update profile" },
+      { message: "Update failed", error: "Something went wrong, could not update profile" },
       { status: 400 }
     );
   }

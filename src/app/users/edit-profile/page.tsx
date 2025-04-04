@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaImage, FaHotel } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaHotel } from "react-icons/fa";
 
 const EditProfile = () => {
   const router = useRouter();
@@ -16,7 +16,6 @@ const EditProfile = () => {
     password: "",
     role: "",
   });
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -32,12 +31,6 @@ const EditProfile = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setProfilePicture(e.target.files[0]);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,18 +52,6 @@ const EditProfile = () => {
       if (formData.phone) updateData.phone = formData.phone;
       if (formData.password) updateData.password = formData.password;
       if (formData.role) updateData.role = formData.role;
-
-      if (profilePicture) {
-        const formDataObj = new FormData();
-        formDataObj.append("file", profilePicture);
-        formDataObj.append("upload_preset", "your_upload_preset");
-        const uploadRes = await fetch("https://api.cloudinary.com/v1_1/your_cloud_name/image/upload", {
-          method: "POST",
-          body: formDataObj,
-        });
-        const uploadData = await uploadRes.json();
-        updateData.profilePic = uploadData.secure_url;
-      }
 
       const res = await fetch("/api/users/profile", {
         method: "PUT",
@@ -272,25 +253,6 @@ const EditProfile = () => {
                     ? "Users can book hotels and manage their reservations"
                     : "No changes to account type"}
                 </p>
-              </div>
-
-              {/* Profile Picture */}
-              <div>
-                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Profile Picture
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaImage className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="profilePicture"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
-                  />
-                </div>
               </div>
             </div>
           </div>
