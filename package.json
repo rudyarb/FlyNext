@@ -19,7 +19,9 @@
     "jose": "^6.0.8",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
+    "mime-types": "^3.0.1",
     "next": "^15.2.4",
+    "node-fetch": "^3.3.2",
     "pdfkit": "^0.16.0",
     "pg": "^8.14.1",
     "react": "^19.0.0",
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@faker-js/faker": "^9.6.0",
     "@types/lodash": "^4.17.16",
+    "@types/mime-types": "^2.1.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -46,3 +46,7 @@ prisma/dev.db-journal
 prisma/migrations/*.toml
 
 test-tokens.txt
+
+# uploads
+public/uploads/
+.image-cache

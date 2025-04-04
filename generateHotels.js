@@ -1,7 +1,61 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
+import { writeFile, mkdir, access, readFile } from 'fs/promises';
+import path from 'path';
+import fetch from 'node-fetch';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
+
+// Create a cache directory for downloaded images
+const CACHE_DIR = path.join(process.cwd(), '.image-cache');
+
+// Generate a hash for the URL to use as cache key
+function getUrlHash(url) {
+  return crypto.createHash('md5').update(url).digest('hex');
+}
+
+async function downloadAndSaveImage(url, hotelId, type, index = '') {
+  try {
+    // Create cache directory if it doesn't exist
+    await mkdir(CACHE_DIR, { recursive: true });
+    
+    // Generate cache key and path
+    const urlHash = getUrlHash(url);
+    const cachePath = path.join(CACHE_DIR, `${urlHash}.jpg`);
+    
+    let imageBuffer;
+
+    // Try to read from cache first
+    try {
+      await access(cachePath);
+      imageBuffer = await readFile(cachePath);
+      console.log(`Using cached image for ${url}`);
+    } catch {
+      // If not in cache, download and cache it
+      console.log(`Downloading new image from ${url}`);
+      const response = await fetch(url);
+      const buffer = await response.arrayBuffer();
+      imageBuffer = Buffer.from(buffer);
+      
+      // Save to cache
+      await writeFile(cachePath, imageBuffer);
+    }
+    
+    // Create hotel's upload directory and save the file there
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'hotels', hotelId);
+    await mkdir(uploadsDir, { recursive: true });
+    
+    const fileName = `${type}-${Date.now()}${index}.jpg`;
+    const filePath = path.join(uploadsDir, fileName);
+    
+    await writeFile(filePath, imageBuffer);
+    return `/uploads/hotels/${hotelId}/${fileName}`;
+  } catch (error) {
+    console.error(`Failed to process image from ${url}:`, error);
+    return null;
+  }
+}
 
 async function main() {
   // Fetch all cities from the database
@@ -94,22 +148,44 @@ async function main() {
   // For each city, create 2 hotels
   for (const city of cities) {
     for (let i = 0; i < 2; i++) {
-      // Get the current hotel owner (rotating through the list)
       const hotelOwner = hotelOwners[currentOwnerIndex];
       
-      // Create a hotel associated with the HotelOwner in the current city
+      // Create hotel first with minimal data
       const hotel = await prisma.hotel.create({
         data: {
           name: `${faker.helpers.arrayElement(hotelPrefixes)} ${faker.location.city()} ${faker.helpers.arrayElement(hotelSuffixes)}`,
-          logo: faker.helpers.arrayElement(hotelLogos),
+          logoPath: null,
           address: faker.location.streetAddress(),
           city: city.city,
           starRating: faker.number.int({ min: 1, max: 5 }),
-          images: faker.helpers.multiple(() => faker.helpers.arrayElement(hotelImages), {
-            count: faker.number.int({ min: 5, max: 7 })
-          }),
+          imagePaths: [],
           ownerId: hotelOwner.id,
         },
+      });
+
+      // Download and save logo
+      const logoUrl = faker.helpers.arrayElement(hotelLogos);
+      const logoPath = await downloadAndSaveImage(logoUrl, hotel.id, 'logo');
+
+      // Download and save hotel images
+      const selectedHotelImages = faker.helpers.multiple(
+        () => faker.helpers.arrayElement(hotelImages),
+        { count: faker.number.int({ min: 5, max: 7 }) }
+      );
+      
+      const imagePaths = await Promise.all(
+        selectedHotelImages.map((url, index) => 
+          downloadAndSaveImage(url, hotel.id, 'image', `-${index}`)
+        )
+      );
+
+      // Update hotel with file paths
+      await prisma.hotel.update({
+        where: { id: hotel.id },
+        data: {
+          logoPath: logoPath,
+          imagePaths: imagePaths.filter(path => path !== null)
+        }
       });
 
       // Add room types and amenities
@@ -120,9 +196,20 @@ async function main() {
         'Bathtub', 'Rain Shower', 'Work Desk', 'Lounge Area', 'Kitchen'
       ];
 
-      // Create 2-4 room types for the hotel
+      // Create room types with downloaded images
       const roomTypeCount = faker.number.int({ min: 2, max: 4 });
       for (let j = 0; j < roomTypeCount; j++) {
+        const selectedRoomImages = faker.helpers.multiple(
+          () => faker.helpers.arrayElement(roomImages),
+          { count: faker.number.int({ min: 5, max: 7 }) }
+        );
+
+        const roomImagePaths = await Promise.all(
+          selectedRoomImages.map((url, index) => 
+            downloadAndSaveImage(url, hotel.id, `room-${j}`, `-${index}`)
+          )
+        );
+
         await prisma.roomType.create({
           data: {
             type: faker.helpers.arrayElement(roomTypes),
@@ -131,9 +218,7 @@ async function main() {
               { count: faker.number.int({ min: 3, max: 8 })}
             ),
             pricePerNight: Number(faker.number.float({ min: 100, max: 1000, precision: 0.01 }).toFixed(2)),
-            images: faker.helpers.multiple(() => faker.helpers.arrayElement(roomImages), {
-              count: faker.number.int({ min: 5, max: 7 })
-            }),
+            images: roomImagePaths.filter(path => path !== null),
             hotelId: hotel.id,
             quantity: faker.number.int({ min: 5, max: 20 }),
             availability: faker.number.int({ min: 5, max: 20 }),
@@ -141,7 +226,6 @@ async function main() {
         });
       }
 
-      // Move to next owner, rotating back to the first if we reach the end
       currentOwnerIndex = (currentOwnerIndex + 1) % hotelOwners.length;
     }
   }

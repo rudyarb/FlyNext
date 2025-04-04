@@ -83,11 +83,11 @@ CREATE TABLE "FlightBooking" (
 CREATE TABLE "Hotel" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "logo" TEXT,
+    "logoPath" TEXT,
     "address" TEXT NOT NULL,
     "city" TEXT NOT NULL,
     "starRating" INTEGER NOT NULL,
-    "images" JSONB NOT NULL,
+    "imagePaths" TEXT[],
     "ownerId" TEXT NOT NULL,
 
     CONSTRAINT "Hotel_pkey" PRIMARY KEY ("id")
