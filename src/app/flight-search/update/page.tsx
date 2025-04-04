@@ -21,6 +21,7 @@ const FlightSearchContent = () => {
   const [email, setEmail] = useState<string>("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false); // Add this line
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
   const token = localStorage.getItem("token"); // Get the token from local storage
@@ -36,6 +37,7 @@ const FlightSearchContent = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSearching(true); // Add this line
 
     const query = new URLSearchParams({
       source,
@@ -84,6 +86,8 @@ const FlightSearchContent = () => {
       setError("An error occurred while fetching flights."); // Replace alert with error state
       setStartFlights([]);
       setReturnFlights([]);
+    } finally {
+      setIsSearching(false); // Add this line
     }
   };
 
@@ -217,13 +221,22 @@ const FlightSearchContent = () => {
         </button>
       </form>
 
+      {isSearching && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p className="text-gray-900 dark:text-gray-100 text-lg font-medium">Searching for flights...</p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200 rounded-lg">
           {error}
         </div>
       )}
 
-      {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
+      {isLoaded && !isSearching && (startFlights.length > 0 || returnFlights.length > 0) ? (
         <div className="mt-8">
           <h3 className="text-xl font-semibold">Start Flights</h3>
           <FlightList
@@ -236,8 +249,8 @@ const FlightSearchContent = () => {
             onBookFlight={handleBookFlight}
           />
         </div>
-      ) : (
-        <p className="mt-8 text-center text-gray-500">No flights found. Try a different search.</p>
+      ) : !isSearching && (
+        <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
       )}
 
       <div className="mt-8 text-center">

@@ -18,21 +18,50 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const filePath = path.join(process.cwd(), 'public', ...resolvedParams.path);
-    const imageBuffer = await readFile(filePath);
     
-    // Determine content type based on file extension
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    let imageBuffer: Buffer;
+    let finalPath: string;
 
-    // Return the image with proper content type
-    return new NextResponse(imageBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
+    try {
+      imageBuffer = await readFile(filePath);
+      finalPath = filePath;
+      
+      // Determine content type based on file extension
+      const ext = path.extname(finalPath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      // Return the image with proper content type
+      return new NextResponse(imageBuffer, {
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      });
+    } catch (error) {
+      // If image not found, return 404 with a JSON response
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Image not found',
+          path: resolvedParams.path.join('/')
+        }), 
+        { 
+          status: 404,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+    }
   } catch (error) {
-    console.error('Error serving image:', error);
-    return new NextResponse('Image not found', { status: 404 });
+    console.error('Error handling image request:', error);
+    return new NextResponse(
+      JSON.stringify({ error: 'Internal server error' }), 
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
   }
 }

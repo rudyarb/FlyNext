@@ -7,8 +7,8 @@ export interface HotelDetailsProps {
   address: string;
   city: string;
   starRating: number;
-  logoPath: string | null;  // Changed from logo to logoPath
-  imagePaths: string[];    // Changed from images to imagePaths
+  logoPath: string | null;
+  imagePaths: string[];
 }
 
 export default function HotelDetails({ 
@@ -16,13 +16,23 @@ export default function HotelDetails({
   address, 
   city, 
   starRating, 
-  logoPath,   // Updated prop name
-  imagePaths  // Updated prop name
+  logoPath,
+  imagePaths = [] // Add default empty array
 }: HotelDetailsProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       {/* Image Carousel */}
-      <ImageCarousel images={imagePaths.map(path => `/api/images${path}`)} alt={name} height="h-96" />
+      {imagePaths && imagePaths.length > 0 ? (
+        <ImageCarousel 
+          images={imagePaths.map(path => `/api/images${path}`)} 
+          alt={name} 
+          height="h-96" 
+        />
+      ) : (
+        <div className="h-96 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">No images available</p>
+        </div>
+      )}
 
       {/* Hotel Info */}
       <div className="p-6">

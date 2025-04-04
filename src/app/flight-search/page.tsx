@@ -16,6 +16,7 @@ export default function FlightSearchPage() {
   const [startFlights, setStartFlights] = useState<Flight[]>([]);
   const [returnFlights, setReturnFlights] = useState<Flight[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSearching, setIsSearching] = useState(false); // Add this line
   const [showModal, setShowModal] = useState(false);
   const [passportNumber, setPassportNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -33,6 +34,7 @@ export default function FlightSearchPage() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSearching(true); // Add this line
 
     const query = new URLSearchParams({
       source,
@@ -81,6 +83,8 @@ export default function FlightSearchPage() {
       alert("An error occurred while fetching flights."); // Ensure alert is visible in dark mode
       setStartFlights([]);
       setReturnFlights([]);
+    } finally {
+      setIsSearching(false); // Add this line
     }
   };
 
@@ -205,7 +209,16 @@ export default function FlightSearchPage() {
           </button>
         </form>
 
-        {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
+        {isSearching && (
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+              <p className="text-gray-900 dark:text-gray-100 text-lg font-medium">Searching for flights...</p>
+            </div>
+          </div>
+        )}
+
+        {isLoaded && !isSearching && (startFlights.length > 0 || returnFlights.length > 0) ? (
           <div className="mt-8">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Start Flights</h3>
             <FlightList
@@ -218,7 +231,7 @@ export default function FlightSearchPage() {
               onBookFlight={handleBookFlight}
             />
           </div>
-        ) : (
+        ) : !isSearching && (
           <p className="mt-8 text-center text-gray-500 dark:text-gray-400">No flights found. Try a different search.</p>
         )}
 
