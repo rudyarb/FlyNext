@@ -6,10 +6,11 @@ import { saveFile } from "@utils/fileUpload";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
-    const hotelId = params.id;
+    const { params } = context;
+    const hotelId = await Promise.resolve(params.id);
     const formData = await request.formData();
 
     // Extract form data

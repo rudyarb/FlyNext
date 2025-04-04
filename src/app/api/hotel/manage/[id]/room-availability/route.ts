@@ -5,11 +5,14 @@ import { verifyHotelOwner } from "@/middleware/ownerAuth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
+    // Await the params before using
+    const { id } = await context.params;
+
     // Verify hotel owner
-    const isAuthorized = await verifyHotelOwner(request, params.id);
+    const isAuthorized = await verifyHotelOwner(request, id);
     if (!isAuthorized) {
       return NextResponse.json(
         { error: "Unauthorized access" },
@@ -37,7 +40,7 @@ export async function GET(
 
     // Base query conditions
     let whereClause: any = {
-      hotelId: params.id
+      hotelId: id
     };
 
     // Add room type filter if provided

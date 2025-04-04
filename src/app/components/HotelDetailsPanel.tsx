@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { FaImage, FaTrash, FaUpload, FaStar } from 'react-icons/fa';
 
 interface HotelDetailsPanelProps {
@@ -40,6 +40,34 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
 }) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+        setErrorMessage('Unsupported file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+        return;
+      }
+      setErrorMessage('');
+      onLogoUpload(file);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const hasInvalidFile = files.some(file => !SUPPORTED_IMAGE_TYPES.includes(file.type));
+    
+    if (hasInvalidFile) {
+      setErrorMessage('Unsupported file type. Please upload JPEG, PNG, GIF, or WebP images only.');
+      return;
+    }
+    
+    setErrorMessage('');
+    onImageUpload(e);
+  };
 
   return (
     <div className="p-8">
@@ -48,6 +76,13 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
         {successMessage && (
           <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-400 px-4 py-3 rounded relative" role="alert">
             <span className="block sm:inline">{successMessage}</span>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-700 dark:text-red-400 px-4 py-3 rounded relative" role="alert">
+            <span className="block sm:inline">{errorMessage}</span>
           </div>
         )}
 
@@ -73,10 +108,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                           ref={logoInputRef}
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) onLogoUpload(file);
-                          }}
+                          onChange={handleLogoUpload}
                           className="hidden"
                         />
                       </label>
@@ -90,10 +122,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                       ref={logoInputRef}
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) onLogoUpload(file);
-                      }}
+                      onChange={handleLogoUpload}
                       className="hidden"
                     />
                   </label>
@@ -110,7 +139,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, name: e.target.value }))}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   required
                   placeholder="Enter hotel name"
@@ -125,7 +154,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                   <input
                     type="text"
                     value={formData.city}
-                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, city: e.target.value }))}
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     required
                     placeholder="Enter city"
@@ -139,7 +168,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                   <div className="relative">
                     <select
                       value={formData.starRating}
-                      onChange={(e) => setFormData(prev => ({ ...prev, starRating: Number(e.target.value) }))}
+                      onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, starRating: Number(e.target.value) }))}
                       className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none pr-10"
                     >
                       {[1, 2, 3, 4, 5].map(rating => (
@@ -160,7 +189,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  onChange={(e) => setFormData((prev: typeof formData) => ({ ...prev, address: e.target.value }))}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   required
                   placeholder="Enter complete address"
@@ -189,7 +218,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
               type="file"
               accept="image/*"
               multiple
-              onChange={onImageUpload}
+              onChange={handleImageUpload}
               className="hidden"
             />
           </div>
