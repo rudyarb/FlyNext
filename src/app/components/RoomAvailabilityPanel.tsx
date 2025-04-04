@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaSearch, FaSpinner } from 'react-icons/fa';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 interface RoomAvailability {
   id: string;
@@ -20,8 +22,8 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     roomType: '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    startDate: null as Date | null,
+    endDate: null as Date | null
   });
   const [token, setToken] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -31,18 +33,46 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
     setToken(localStorage.getItem('token'));
   }, []);
 
+  useEffect(() => {
+    if (token) {
+      fetchAvailability();
+    }
+  }, [hotelId, token]);
+
+  const validateDates = (): boolean => {
+    if (!filters.startDate || !filters.endDate) return true; // Make dates optional
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (filters.startDate.getTime() < today.getTime()) {
+      setError('Start date cannot be in the past');
+      return false;
+    }
+
+    if (filters.endDate.getTime() <= filters.startDate.getTime()) {
+      setError('End date must be after start date');
+      return false;
+    }
+
+    return true;
+  };
+
   const fetchAvailability = async () => {
     if (!token) return;
+
+    if (!validateDates()) {
+      return;
+    }
 
     setIsLoading(true);
     setError('');
 
     try {
-      const queryParams = new URLSearchParams({
-        ...(filters.roomType && { roomType: filters.roomType }),
-        startDate: filters.startDate,
-        endDate: filters.endDate
-      });
+      const queryParams = new URLSearchParams();
+      if (filters.roomType) queryParams.append('roomType', filters.roomType);
+      if (filters.startDate) queryParams.append('startDate', filters.startDate.toISOString().split('T')[0]);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate.toISOString().split('T')[0]);
 
       const response = await fetch(
         `/api/hotel/manage/${hotelId}/room-availability?${queryParams}`,
@@ -69,68 +99,85 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
   if (!isClient) return null;
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Room Availability
         </h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Information about room availability for your hotel
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Date Range
+          </label>
+          <DatePicker
+            selectsRange
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onChange={(update: [Date | null, Date | null]) => {
+              setFilters(prev => ({ ...prev, startDate: update[0], endDate: update[1] }));
+            }}
+            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm 
+              text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholderText="Select date range"
+          />
+        </div>
         
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Room Type
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 
-                focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={filters.roomType}
-              onChange={(e) => setFilters({ ...filters, roomType: e.target.value })}
-              placeholder="Filter by room type"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 
-                focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 
-                focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            />
-          </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Room Type
+          </label>
+          <input
+            type="text"
+            value={filters.roomType}
+            onChange={(e) => setFilters(prev => ({ ...prev, roomType: e.target.value }))}
+            placeholder="Enter room type"
+            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
+              text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
 
-        <button
-          onClick={fetchAvailability}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm 
-            text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 
-            focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          {isLoading ? (
-            <FaSpinner className="animate-spin mr-2" />
-          ) : (
-            <FaSearch className="mr-2" />
-          )}
-          Search
-        </button>
+        <div className="flex items-end">
+          <button
+            onClick={fetchAvailability}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md 
+              hover:bg-blue-700 transition-colors duration-200 shadow-sm
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <FaSpinner className="animate-spin mr-2" />
+                Searching...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center">
+                <FaSearch className="mr-2" />
+                Search
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="flex items-end">
+          <button
+            onClick={() => {
+              setFilters({ startDate: null, endDate: null, roomType: '' });
+            }}
+            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md 
+              hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors duration-200 shadow-sm
+              focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {error && (

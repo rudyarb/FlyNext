@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { prisma } from "@utils/db";
-import { getHotelOwnerId, ownsHotel } from "@utils/helpers";
+import { getHotelOwnerId, ownsHotel, sendNotification } from "@utils/helpers";
+import { send } from "process";
 
 async function verifyHotelOwner(request: NextRequest, hotelId: string): Promise<boolean> {
   const userHeader = request.headers.get("x-user");
@@ -41,22 +42,19 @@ export async function GET(
     const endDate = searchParams.get('endDate');
     const roomType = searchParams.get('roomType');
 
-    let whereClause: any = { hotelId };
+    let whereClause: any = { 
+      hotelId
+    };
 
-    if (startDate || endDate) {
-      whereClause.OR = [
+    if (startDate && endDate) {
+      // Find bookings that overlap with the given date range
+      whereClause.AND = [
         {
-          checkInDate: {
-            ...(startDate && { gte: new Date(startDate) }),
-            ...(endDate && { lte: new Date(endDate) }),
-          },
+          checkInDate: { lte: new Date(endDate) }
         },
         {
-          checkOutDate: {
-            ...(startDate && { gte: new Date(startDate) }),
-            ...(endDate && { lte: new Date(endDate) }),
-          },
-        },
+          checkOutDate: { gte: new Date(startDate) }
+        }
       ];
     }
 
@@ -212,15 +210,40 @@ export async function PATCH(
     }
 
     // Update booking status to CANCELLED
-    await prisma.hotelBooking.update({
+    const booking = await prisma.hotelBooking.update({
       where: {
         id: bookingId,
         hotelId: hotelId
       },
       data: {
         status: 'CANCELLED'
+      },
+      select: {
+        userId: true,
+        id: true,
+        checkInDate: true,
+        checkOutDate: true,
+        hotel: {
+          select: {
+            name: true
+          }
+        },
+        roomType: {
+          select: {
+            type: true
+          }
+        }
       }
     });
+
+    // Format dates to show only YYYY-MM-DD
+    const checkInDate = booking.checkInDate.toISOString().split('T')[0];
+    const checkOutDate = booking.checkOutDate.toISOString().split('T')[0];
+
+    sendNotification(
+      booking.userId, 
+      `Your ${booking.roomType.type} room booking at ${booking.hotel.name} from ${checkInDate} to ${checkOutDate} has been cancelled. (Booking #${booking.id})`
+    );
 
     return NextResponse.json({ message: 'Booking cancelled successfully' });
 

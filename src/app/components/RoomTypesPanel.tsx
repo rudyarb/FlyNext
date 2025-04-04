@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import RoomTypeForm from './RoomTypeForm';
 
@@ -28,11 +28,31 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
   const [error, setError] = useState<string>('');
   const [token, setToken] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      setEditingRoomType(null);
+      setIsAddingRoom(false);
+    }
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
     setToken(localStorage.getItem('token'));
   }, []);
+
+  useEffect(() => {
+    if (isAddingRoom || editingRoomType) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isAddingRoom, editingRoomType, handleClickOutside]);
 
   const handleAddSubmit = async (formData: FormData) => {
     if (!token) return;
@@ -129,29 +149,20 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
         </div>
       )}
 
-      {isAddingRoom && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full m-4">
+      {(isAddingRoom || editingRoomType) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div 
+            ref={modalRef}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Add New Room Type
+              {editingRoomType ? 'Edit Room Type' : 'Add New Room Type'}
             </h3>
             <RoomTypeForm
-              onSubmit={handleAddSubmit}
-              onCancel={() => setIsAddingRoom(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {editingRoomType && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full m-4">
-            <h3 className="text-xl font-semibold mb-4">Edit Room Type</h3>
-            <RoomTypeForm
-              initialData={editingRoomType}
-              onSubmit={handleEditSubmit}
-              onCancel={() => setEditingRoomType(null)}
-              isEditing={true}
+              initialData={editingRoomType || undefined}
+              onSubmit={editingRoomType ? handleEditSubmit : handleAddSubmit}
+              onCancel={() => editingRoomType ? setEditingRoomType(null) : setIsAddingRoom(false)}
+              isEditing={!!editingRoomType}
             />
           </div>
         </div>

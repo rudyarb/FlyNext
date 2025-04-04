@@ -87,7 +87,7 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
 
   useEffect(() => {
     fetchBookings();
-  }, [hotelId, filters]);
+  }, [hotelId]);
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
@@ -114,10 +114,20 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
         throw new Error(data.error);
       }
 
-      // Refresh bookings after cancellation
       fetchBookings();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel booking');
+    }
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters(prev => ({ ...prev, roomType: e.target.value }));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      fetchBookings();
     }
   };
 
@@ -134,7 +144,7 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Date Range
@@ -160,14 +170,8 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
           <input
             type="text"
             value={filters.roomType}
-            onChange={e => setFilters(prev => ({ ...prev, roomType: e.target.value }))}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                fetchBookings();
-              }
-            }}
-            placeholder="Specify a room type and press Enter"
+            onChange={handleFilterChange}
+            placeholder="Enter room type"
             className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm
               text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -176,7 +180,30 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
 
         <div className="flex items-end">
           <button
-            onClick={() => setFilters({ startDate: null, endDate: null, roomType: '' })}
+            onClick={fetchBookings}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md 
+              hover:bg-blue-700 transition-colors duration-200 shadow-sm
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Searching...
+              </span>
+            ) : (
+              'Search'
+            )}
+          </button>
+        </div>
+
+        <div className="flex items-end">
+          <button
+            onClick={() => {
+              setFilters({ startDate: null, endDate: null, roomType: '' });
+            }}
             className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md 
               hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors duration-200 shadow-sm
               focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"

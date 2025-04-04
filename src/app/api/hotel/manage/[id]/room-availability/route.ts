@@ -42,27 +42,76 @@ export async function GET(
         availability: true,
         hotelBookings: startDate && endDate ? {
           where: {
-            OR: [
-              { checkInDate: { lte: new Date(endDate), gte: new Date(startDate) } },
-              { checkOutDate: { lte: new Date(endDate), gte: new Date(startDate) } },
-            ],
-            NOT: { status: "CANCELLED" },
-          },
+            AND: [
+              {
+                OR: [
+                  {
+                    AND: [
+                      { checkInDate: { lte: new Date(endDate) } },
+                      { checkInDate: { gte: new Date(startDate) } }
+                    ]
+                  },
+                  {
+                    AND: [
+                      { checkOutDate: { lte: new Date(endDate) } },
+                      { checkOutDate: { gte: new Date(startDate) } }
+                    ]
+                  },
+                  {
+                    AND: [
+                      { checkInDate: { lte: new Date(startDate) } },
+                      { checkOutDate: { gte: new Date(endDate) } }
+                    ]
+                  }
+                ]
+              },
+              { status: { not: "CANCELLED" } }
+            ]
+          }
         } : false,
       },
     });
 
     const availability = roomTypes.map(roomType => {
-      const totalRooms = roomType.quantity;
-      const bookedRooms = startDate && endDate ? roomType.hotelBookings?.length || 0 : 0;
+      const totalRooms = Math.max(0, roomType.quantity);
+      let availableRooms = totalRooms;
+
+      if (startDate && endDate && roomType.hotelBookings) {
+        // Create array of dates in the range
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const dateRange = [];
+        let currentDate = new Date(start);
+
+        while (currentDate <= end) {
+          dateRange.push(new Date(currentDate));
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Count bookings for each date and find minimum availability
+        const dailyAvailability = dateRange.map(date => {
+          const bookingsOnDate = roomType.hotelBookings.filter(booking => {
+            const bookingStart = new Date(booking.checkInDate);
+            const bookingEnd = new Date(booking.checkOutDate);
+            return date >= bookingStart && date <= bookingEnd;
+          }).length;
+
+          return Math.max(0, totalRooms - bookingsOnDate);
+        });
+
+        // Set available rooms to minimum availability across the date range
+        availableRooms = Math.max(0, Math.min(...dailyAvailability));
+      }
+
+      const occupiedRooms = Math.max(0, totalRooms - availableRooms);
 
       return {
         id: roomType.id,
         type: roomType.type,
         totalRooms,
-        availableRooms: totalRooms - bookedRooms,
-        occupiedRooms: bookedRooms,
-        currentAvailability: roomType.availability,
+        availableRooms,
+        occupiedRooms,
+        currentAvailability: Math.max(0, roomType.availability),
       };
     });
 

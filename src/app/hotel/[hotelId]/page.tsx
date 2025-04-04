@@ -232,7 +232,7 @@ export default function HotelDetailsPage() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {checkIn && checkOut 
-                ? `Available Rooms from: ${new Date(checkIn).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} to ${new Date(checkOut).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` 
+                ? `Available Rooms from: ${checkIn} to ${checkOut}` 
                 : 'Rooms'}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

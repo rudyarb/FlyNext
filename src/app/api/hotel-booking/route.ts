@@ -51,16 +51,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     try {
-        // Fetch all hotel bookings for the user
-        const rawHotelBookings = await prisma.hotelBooking.findMany({
-            where: { userId, itinerary: null }, // Only fetch bookings where itinerary is NULL
+        const hotelBookings = await prisma.hotelBooking.findMany({
+            where: { 
+                userId,
+                itinerary: null 
+            },
+            include: {
+                hotel: {
+                    select: {
+                        id: true,
+                        name: true,
+                        address: true,
+                        city: true,
+                        starRating: true,
+                        logoPath: true,
+                        imagePaths: true
+                    }
+                },
+                roomType: {
+                    select: {
+                        type: true,
+                        pricePerNight: true
+                    }
+                }
+            }
         });
-
-        // Map raw data to match the HotelBooking interface
-        const hotelBookings: HotelBooking[] = rawHotelBookings.map((booking) => ({
-            ...booking,
-            itinerary: booking.itineraryId, // Map itineraryId to itinerary
-        }));
 
         return new NextResponse(
             JSON.stringify(hotelBookings),
