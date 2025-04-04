@@ -2,27 +2,44 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 
+interface ValidatedUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
+
 export async function POST(request: NextRequest) {
-  try {
-    // Get user from header
     const userHeader = request.headers.get("x-user");
-    if (!userHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    console.log("User Header:", userHeader);
+    
+      if (!userHeader) {
+          return NextResponse.json(
+              { error: "Unauthorized or Invalid token" },
+              { status: 401 }
+          );
+      }
+  
+    let validatedUser: ValidatedUser;
+    try {
+        validatedUser = JSON.parse(userHeader);
+    } catch {
+        return NextResponse.json(
+            { error: "Invalid user data" },
+            { status: 401 }
+        );
     }
+    console.log("Validated User:", validatedUser);
 
-    const validatedUser = JSON.parse(userHeader);
     const userId = validatedUser.id;
-
     if (!userId) {
-      return NextResponse.json(
-        { error: "Invalid user data" },
-        { status: 401 }
-      );
+        return NextResponse.json(
+            { error: "Unauthorized or Invalid token" },
+            { status: 401 }
+        );
     }
+    console.log("User ID:", userId);
 
+    try {
     // Parse request body
     const { hotelId, roomId, checkIn, checkOut } = await request.json();
 
@@ -100,10 +117,10 @@ export async function POST(request: NextRequest) {
         checkOutDate,
         status: "CONFIRMED"
       },
-      include: {
-        hotel: true,
-        roomType: true
-      }
+      // include: {
+      //   hotel: true,
+      //   roomTypeId: true
+      // }
     });
 
     // Send notification to hotel owner
