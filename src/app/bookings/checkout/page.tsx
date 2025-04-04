@@ -131,9 +131,11 @@ export default function Checkout() {
           <h2 className="text-xl font-semibold">Hotel Bookings</h2>
           {hotelBookings.map((hotel, index) => (
             <div key={index} className="border border-gray-200 dark:border-gray-700 p-2 mb-2 bg-white dark:bg-gray-800">
-              <p>Hotel Name: {hotel.name}</p>
-              <p>Location: {hotel.location}</p>
-              <p>Price per night: {hotel.pricePerNight}</p>
+              <p>Hotel ID: {hotel.hotelId}</p>
+              <p>Room ID: {hotel.roomId}</p>
+              <p>Booking Status: {hotel.status}</p>
+              <p>Check-In Date: {hotel.checkInDate}</p>
+              <p>Check-Out Date: {hotel.checkOutDate}</p>
             </div>
           ))}
         </div>
