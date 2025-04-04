@@ -18,7 +18,7 @@ export default function BookingPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const hotelId = params.hotelId as string;
   const roomId = searchParams.get('roomId');
   const checkIn = searchParams.get('checkIn');
@@ -26,6 +26,7 @@ export default function BookingPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState(false); // New state for success message
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
 
   // Fetch booking details
@@ -41,9 +42,9 @@ export default function BookingPage() {
         const response = await fetch(
           `/api/hotel/booking/details?hotelId=${hotelId}&roomId=${roomId}&checkIn=${checkIn}&checkOut=${checkOut}`
         );
-        
+
         if (!response.ok) throw new Error('Failed to fetch booking details');
-        
+
         const data = await response.json();
         setBookingDetails(data);
       } catch (error) {
@@ -60,6 +61,7 @@ export default function BookingPage() {
   const handleBooking = async () => {
     setLoading(true);
     setError('');
+    setSuccess(false); // Reset success state
 
     try {
       const response = await fetch('/api/hotel/booking/create', {
@@ -82,8 +84,13 @@ export default function BookingPage() {
         throw new Error(data.error || 'Failed to create booking');
       }
 
-      // Redirect to booking confirmation page
-      router.push(`/bookings/${data.bookingId}`);
+      // Show success message
+      setSuccess(true);
+
+      // Redirect to hotel search page after a delay
+      setTimeout(() => {
+        router.push(`/hotel-search/`);
+      }, 3000); // Redirect after 3 seconds
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create booking');
       setLoading(false);
@@ -105,7 +112,7 @@ export default function BookingPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-red-500">{error}</p>
-          <Link 
+          <Link
             href={`/hotel/${hotelId}`}
             className="text-blue-600 dark:text-blue-400 hover:underline"
           >
@@ -122,6 +129,14 @@ export default function BookingPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto space-y-8">
+          {/* Success Message */}
+          {success && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Success!</strong>
+              <span className="block sm:inline"> Your booking has been placed successfully.</span>
+            </div>
+          )}
+
           {/* Booking Summary Card */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <div className="p-6 space-y-6">
