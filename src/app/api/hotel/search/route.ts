@@ -179,7 +179,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error('Search error:', error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: 'Failed to fetch hotels' },
-      { status: 500 }
+      { status: 400 }
     );
   }
 }
