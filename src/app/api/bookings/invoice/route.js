@@ -109,7 +109,7 @@ export async function GET(request) {
     }));
     const hotelsInfo = hotels.map(hotel => ({
       hotelId: hotel.hotelId,
-      roomTypeId: hotel.roomTypeId,
+      roomId: hotel.roomId,
       bookingDate: hotel.bookingDate,
       checkInDate: hotel.checkInDate,
       checkOutDate: hotel.checkOutDate,
@@ -172,7 +172,7 @@ export async function GET(request) {
     invoiceData.hotelsInfo.forEach((hotel) => {
         doc.moveDown();
         doc.text(`  Hotel ID: ${hotel.hotelId}`);
-        doc.text(`  Room Type ID: ${hotel.roomTypeId}`);
+        doc.text(`  Room ID: ${hotel.roomId}`);
         doc.text(`  Booking Date: ${hotel.bookingDate}`);
         doc.text(`  Check-in Date: ${hotel.checkInDate}`);
         doc.text(`  Check-out Date: ${hotel.checkOutDate}`);

@@ -261,9 +261,11 @@ export default function BookingsPage() {
                                 <h3 className="text-lg font-semibold">Hotel Bookings</h3>
                                 {booking.itinerary.hotels.map((hotelBooking: HotelBooking, index: number) => (
                                     <div key={index} className="border p-2 mb-2">
-                                        <p>Hotel Name: {hotelBooking.name}</p>
-                                        <p>Location: {hotelBooking.location}</p>
-                                        <p>Price per night: {hotelBooking.pricePerNight}</p>
+                                        <p>Hotel ID: {hotelBooking.hotelId}</p>
+                                        <p>Room ID: {hotelBooking.roomId}</p>
+                                        <p>Booking Status: {hotelBooking.status}</p>
+                                        <p>Check-In Date: {hotelBooking.checkInDate}</p>
+                                        <p>Check-Out Date: {hotelBooking.checkOutDate}</p>
                                     </div>
                                 ))}
                             </div>

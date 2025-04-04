@@ -51,9 +51,11 @@ export interface FlightBooking {
 }
 
 export interface HotelBooking {
-  name: string;
-  location: string;
-  pricePerNight: number;
+  hotelId: string;
+  roomId: string;
+  status: number;
+  checkInDate: string;
+  checkOutDate: string;
 }
 
 interface FlightListProps {
