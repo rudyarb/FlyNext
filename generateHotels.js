@@ -135,10 +135,10 @@ async function main() {
   ];
 
   const hotelLogos = [
-    'https://placehold.co/400x300/gold/white?text=Luxury+Hotel',
-    'https://placehold.co/400x300/darkblue/white?text=Premium+Hotel',
-    'https://placehold.co/400x300/darkred/white?text=Resort+Hotel',
-    'https://placehold.co/400x300/forest/white?text=Grand+Hotel'
+    'https://placehold.co/400x300/FFD700/FFFFFF?text=Luxury+Hotel',
+    'https://placehold.co/400x300/00008B/FFFFFF?text=Premium+Hotel', 
+    'https://placehold.co/400x300/8B0000/FFFFFF?text=Resort+Hotel',
+    'https://placehold.co/400x300/228B22/FFFFFF?text=Grand+Hotel'
   ];
 
   // Calculate total number of hotels to be created

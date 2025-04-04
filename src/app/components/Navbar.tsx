@@ -8,7 +8,7 @@ import DarkModeToggle from "./DarkModeToggle";
 import { FaUserCircle } from "react-icons/fa";
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated, userName, logout } = useAuth();
+  const { isAuthenticated, userName, logout, userRole } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -69,13 +69,22 @@ const Navbar: React.FC = () => {
                     <Link
                       href="/users/edit-profile"
                       className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                      onClick={() => setDropdownOpen(false)} // Close dropdown when clicking "Edit Profile"
+                      onClick={() => setDropdownOpen(false)}
                     >
                       Edit Profile
                     </Link>
+                    {userRole === "ADMIN" && (
+                      <Link
+                        href="/hotel-manage"
+                        className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        Manage Hotels
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
-                        setDropdownOpen(false); // Close dropdown before logging out
+                        setDropdownOpen(false);
                         logout();
                       }}
                       className="w-full text-left px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
