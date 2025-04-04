@@ -20,6 +20,7 @@ const FlightSearchUpdatePage = () => {
   const [passportNumber, setPassportNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
   const token = localStorage.getItem("token"); // Get the token from local storage
@@ -48,7 +49,7 @@ const FlightSearchUpdatePage = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        alert(`Error: ${data.message || "Failed to fetch flights."}`);
+        setError(data.message || "Failed to fetch flights."); // Replace alert with error state
         return;
       }
 
@@ -80,6 +81,7 @@ const FlightSearchUpdatePage = () => {
       );
     } catch (error) {
       console.error("Error fetching flight data:", error);
+      setError("An error occurred while fetching flights."); // Replace alert with error state
       setStartFlights([]);
       setReturnFlights([]);
     }
@@ -148,6 +150,16 @@ const FlightSearchUpdatePage = () => {
     }
   };
 
+  const loading = !isLoaded; // Define loading based on isLoaded
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-white dark:bg-gray-900">
+        <p className="text-gray-800 dark:text-gray-200">Loading flights...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-md">
       <h2 className="text-2xl font-semibold mb-4">Flight Search</h2>
@@ -204,6 +216,12 @@ const FlightSearchUpdatePage = () => {
           Search Flights
         </button>
       </form>
+
+      {error && (
+        <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {isLoaded && (startFlights.length > 0 || returnFlights.length > 0) ? (
         <div className="mt-8">

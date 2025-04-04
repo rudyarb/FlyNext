@@ -8,6 +8,8 @@ export default function BookingsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -38,13 +40,13 @@ export default function BookingsPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
+                setSuccessMessage(data.message); // Replace alert with success message
             } else {
-                alert(data.error || "Failed to verify flight.");
+                setErrorMessage(data.error || "Failed to verify flight."); // Replace alert with error message
             }
         } catch (error) {
             console.error("Error verifying flight:", error);
-            alert("An error occurred while verifying the flight.");
+            setErrorMessage("An error occurred while verifying the flight."); // Replace alert with error message
         }
     };
 
@@ -67,14 +69,14 @@ export default function BookingsPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
+                setSuccessMessage(data.message); // Replace alert with success message
                 window.location.reload();
             } else {
-                alert(data.error || "Failed to delete flight booking.");
+                setErrorMessage(data.error || "Failed to delete flight booking."); // Replace alert with error message
             }
         } catch (error) {
             console.error("Error deleting flight booking:", error);
-            alert("An error occurred while deleting the flight booking.");
+            setErrorMessage("An error occurred while deleting the flight booking."); // Replace alert with error message
         }
     };
 
@@ -97,14 +99,14 @@ export default function BookingsPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
+                setSuccessMessage(data.message); // Replace alert with success message
                 window.location.reload();
             } else {
-                alert(data.error || "Failed to delete booking.");
+                setErrorMessage(data.error || "Failed to delete booking."); // Replace alert with error message
             }
         } catch (error) {
             console.error("Error deleting booking:", error);
-            alert("An error occurred while deleting the booking.");
+            setErrorMessage("An error occurred while deleting the booking."); // Replace alert with error message
         }
     };
 
@@ -132,11 +134,11 @@ export default function BookingsPage() {
                 link.click();
                 window.URL.revokeObjectURL(url);
             } else {
-                alert("Failed to generate invoice.");
+                setErrorMessage("Failed to generate invoice."); // Replace alert with error message
             }
         } catch (error) {
             console.error("Error generating invoice:", error);
-            alert("An error occurred while generating the invoice.");
+            setErrorMessage("An error occurred while generating the invoice."); // Replace alert with error message
         }
     };
 
@@ -157,14 +159,14 @@ export default function BookingsPage() {
                 });
 
                 if (!response.ok) {
-                    alert("Failed to fetch bookings.");
+                    setErrorMessage("Failed to fetch bookings."); // Replace alert with error message
                     return;
                 }
                 const bookingsData = await response.json();
                 setBookings(bookingsData);
             } catch (error) {
                 console.error("Error fetching bookings:", error);
-                alert("An error occurred while fetching bookings.");
+                setErrorMessage("An error occurred while fetching bookings."); // Replace alert with error message
                 return;
             } finally {
                 setLoading(false);
@@ -194,6 +196,18 @@ export default function BookingsPage() {
             >
                 Go Back to Home
             </button>
+
+            {errorMessage && (
+                <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 dark:bg-red-800 dark:text-red-200 rounded-lg">
+                    {errorMessage}
+                </div>
+            )}
+
+            {successMessage && (
+                <div className="p-4 mb-4 text-sm text-green-700 bg-green-100 dark:bg-green-800 dark:text-green-200 rounded-lg">
+                    {successMessage}
+                </div>
+            )}
 
             {bookings.length > 0 ? (
                 bookings.map((booking, bookingIndex) => (

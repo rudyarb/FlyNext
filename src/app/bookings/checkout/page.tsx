@@ -141,7 +141,7 @@ export default function Checkout() {
           value={creditCard.number}
           onChange={handleInputChange}
           placeholder="Card Number"
-          className="border border-gray-200 dark:border-gray-700 p-2 mb-2 block w-full bg-white dark:bg-gray-800"
+          className="border border-gray-200 dark:border-gray-700 p-2 mb-2 block w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
         <input
           type="text"
@@ -163,7 +163,7 @@ export default function Checkout() {
 
       <button
         onClick={finalizeBooking}
-        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
+        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:bg-gray-300 dark:disabled:bg-gray-700"
         disabled={loading || bookingSuccess}
       >
         {loading ? 'Finalizing...' : bookingSuccess ? 'Booking Successful' : 'Finalize Booking'}

@@ -68,17 +68,17 @@ export default function Cart() {
     <div className="fixed bottom-4 right-4">
       <button
         onClick={handleCartToggle}
-        className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-md"
+        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md shadow-md hover:bg-blue-700 dark:hover:bg-blue-600"
       >
         {isOpen ? 'Close Cart' : 'Open Cart'}
       </button>
       {isOpen && (
         <div className="mt-2 bg-white dark:bg-gray-800 p-4 rounded-md shadow-lg max-w-sm">
-          <h3 className="text-lg font-semibold mb-2">Your Cart</h3>
+          <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Your Cart</h3>
           <div>
-            <h4 className="font-medium">Flights:</h4>
+            <h4 className="font-medium text-gray-800 dark:text-gray-200">Flights:</h4>
             {flights.length > 0 ? (
-              <ul className="list-disc pl-5">
+              <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300">
                 {flights.map((flight: FlightBooking, index) => (
                   <li key={index}>
                     {flight.flightNumber} - {flight.originCity} ({flight.originCode}) to {flight.destinationCity} ({flight.destinationCode})
@@ -86,13 +86,13 @@ export default function Cart() {
                 ))}
               </ul>
             ) : (
-              <p>No flights in cart.</p>
+              <p className="text-gray-600 dark:text-gray-400">No flights in cart.</p>
             )}
           </div>
           <div className="mt-4">
-            <h4 className="font-medium">Hotels:</h4>
+            <h4 className="font-medium text-gray-800 dark:text-gray-200">Hotels:</h4>
             {hotels.length > 0 ? (
-              <ul className="list-disc pl-5">
+              <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300">
                 {hotels.map((hotel: HotelDetailsProps, index) => (
                   <li key={index}>
                     {hotel.name} - {hotel.city}, {hotel.address}
@@ -100,7 +100,7 @@ export default function Cart() {
                 ))}
               </ul>
             ) : (
-              <p>No hotels in cart.</p>
+              <p className="text-gray-600 dark:text-gray-400">No hotels in cart.</p>
             )}
           </div>
         </div>
