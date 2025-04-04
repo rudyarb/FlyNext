@@ -1,20 +1,27 @@
 # Use official Node.js image
-FROM node:18
+FROM node:20-alpine AS builder
 
-# Set working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
 COPY . .
+RUN npx prisma generate
 
-# Expose application port
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package*.json ./
+COPY startup.sh ./
+
+RUN sh startup.sh
+
 EXPOSE 3000
+ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", "server.js"]
+CMD npm start
