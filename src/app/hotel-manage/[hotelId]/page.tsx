@@ -2,11 +2,12 @@
 
 import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaHotel, FaBed, FaImage, FaTrash, FaUpload } from 'react-icons/fa';
+import { FaHotel, FaBed, FaImage, FaTrash, FaUpload, FaCalendar } from 'react-icons/fa';
 import TabPanel from '@/app/components/TabPanel';
 import ImageReorderModal from '@/app/components/ImageReorderModal';
 import HotelDetailsPanel from '@/app/components/HotelDetailsPanel';
 import RoomTypesPanel from '@/app/components/RoomTypesPanel';
+import BookingsPanel from '@/app/components/BookingsPanel';
 import AuthWrapper from '@/app/components/AuthWrapper';
 import { classNames } from '@/utils/styling';
 import Link from 'next/link';
@@ -194,7 +195,8 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
 
   const tabs = [
     { name: 'Hotel Details', icon: FaHotel },
-    { name: 'Room Types', icon: FaBed }
+    { name: 'Room Types', icon: FaBed },
+    { name: 'Bookings', icon: FaCalendar }
   ];
 
   return (
@@ -271,6 +273,10 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
                   roomTypes={hotel?.roomTypes || []}
                   onUpdate={() => fetchHotelDetails(resolvedParams.hotelId)}
                 />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={2}>
+                <BookingsPanel hotelId={resolvedParams.hotelId} />
               </TabPanel>
             </div>
           </div>

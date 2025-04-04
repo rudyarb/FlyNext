@@ -1,16 +1,36 @@
-import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { verifyHotelOwner } from "@/middleware/ownerAuth";
-import { sendNotification, getUserIdByHotelOwnerId } from "@utils/helpers";
+import { prisma } from "@utils/db";
+import { getHotelOwnerId, ownsHotel } from "@utils/helpers";
+
+async function verifyHotelOwner(request: NextRequest, hotelId: string): Promise<boolean> {
+  const userHeader = request.headers.get("x-user");
+  if (!userHeader) return false;
+
+  try {
+    const validatedUser = JSON.parse(userHeader);
+    const userId = validatedUser.id;
+    if (!userId) return false;
+
+    const hotelOwnerId = await getHotelOwnerId(userId);
+    if (!hotelOwnerId) return false;
+
+    return await ownsHotel(hotelOwnerId, hotelId);
+  } catch (error) {
+    return false;
+  }
+}
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
-): Promise<NextResponse> {
+) {
+  // Await the params to ensure they're resolved
+  const { id: hotelId } = await Promise.resolve(params);
+
   try {
     // Verify hotel owner
-    const isAuthorized = await verifyHotelOwner(request, params.id);
+    const isAuthorized = await verifyHotelOwner(request, hotelId);
     if (!isAuthorized) {
       return NextResponse.json(
         { error: "Unauthorized access" },
@@ -18,15 +38,14 @@ export async function GET(
       );
     }
 
-    // Get query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const roomType = searchParams.get('roomType');
+    const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const roomType = searchParams.get('roomType');
 
     // Base query conditions
     let whereClause: any = {
-      hotelId: params.id,
+      hotelId: hotelId,
     };
 
     // Add date range filter if provided
@@ -54,15 +73,9 @@ export async function GET(
       };
     }
 
-    // Fetch bookings with related data
     const bookings = await prisma.hotelBooking.findMany({
       where: whereClause,
-      select: {
-        id: true,
-        checkInDate: true,
-        checkOutDate: true,
-        status: true,
-        bookingDate: true,
+      include: {
         user: {
           select: {
             firstName: true,
@@ -78,19 +91,16 @@ export async function GET(
         }
       },
       orderBy: {
-        checkInDate: 'asc'
+        checkInDate: 'desc'
       }
     });
 
-    return NextResponse.json(
-      { bookings },
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return NextResponse.json({ bookings });
 
   } catch (error) {
-    console.error('Error fetching hotel bookings:', error);
+    console.error('Error fetching bookings:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch hotel bookings' },
+      { error: 'Failed to fetch bookings' },
       { status: 500 }
     );
   }
@@ -100,6 +110,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
+  const { id: hotelId } = await Promise.resolve(params);
+
   try {
     // Get user from header
     const userHeader = request.headers.get("x-user");
@@ -147,7 +159,7 @@ export async function POST(
     const roomType = await prisma.roomType.findFirst({
       where: {
         id: roomTypeId,
-        hotelId: params.id
+        hotelId: hotelId
       },
       include: {
         hotel: true,
@@ -192,7 +204,7 @@ export async function POST(
     // Create booking
     const booking = await prisma.hotelBooking.create({
       data: {
-        hotelId: params.id,
+        hotelId: hotelId,
         roomId: roomTypeId,
         userId: userId,
         checkInDate: checkIn,
@@ -253,106 +265,34 @@ export async function POST(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { bookingId: string } }
-): Promise<NextResponse> {
+  { params }: { params: { id: string } }
+) {
+  const { id: hotelId } = await Promise.resolve(params);
+
   try {
-    const bookingId = params.bookingId;
+    const { bookingId } = await request.json();
 
-    // Get user from header
-    const userHeader = request.headers.get("x-user");
-    if (!userHeader) {
+    // Verify hotel owner
+    const isAuthorized = await verifyHotelOwner(request, hotelId);
+    if (!isAuthorized) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "Unauthorized access" },
         { status: 401 }
       );
     }
 
-    const validatedUser = JSON.parse(userHeader);
-    const userId = validatedUser.id;
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Invalid user data" },
-        { status: 401 }
-      );
-    }
-
-    // Get the booking details
-    const booking = await prisma.hotelBooking.findUnique({
-      where: { id: bookingId },
-      include: {
-        user: true,
-        hotel: true,
-        roomType: true
-      }
-    });
-
-    if (!booking) {
-      return NextResponse.json(
-        { error: "Booking not found" },
-        { status: 404 }
-      );
-    }
-
-    // Check if booking is already cancelled
-    if (booking.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Booking is already cancelled" },
-        { status: 400 }
-      );
-    }
-
-    // Check if user is authorized (either hotel owner or booking user)
-    const isHotelOwner = await verifyHotelOwner(request, booking.hotelId);
-    const isBookingUser = booking.userId === userId;
-
-    if (!isHotelOwner && !isBookingUser) {
-      return NextResponse.json(
-        { error: "Unauthorized to cancel this booking" },
-        { status: 403 }
-      );
-    }
-
-    // Update booking status to cancelled
-    const updatedBooking = await prisma.hotelBooking.update({
-      where: { id: bookingId },
-      data: {
-        status: "CANCELLED"
+    // Update booking status to CANCELLED
+    await prisma.hotelBooking.update({
+      where: {
+        id: bookingId,
+        hotelId: hotelId
       },
-      select: {
-        id: true,
-        status: true,
-        bookingDate: true,
-        checkInDate: true,
-        checkOutDate: true,
-        roomType: {
-          select: {
-            type: true
-          }
-        },
-        hotel: {
-          select: {
-            name: true
-          }
-        }
-      }
-    });
-
-    // Create notification for the user
-    await prisma.notification.create({
       data: {
-        userId: booking.userId,
-        message: `Your booking for ${booking.hotel.name} (${booking.roomType.type}) has been cancelled.`,
+        status: 'CANCELLED'
       }
     });
 
-    return NextResponse.json(
-      { 
-        message: "Booking cancelled successfully",
-        booking: updatedBooking
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: 'Booking cancelled successfully' });
 
   } catch (error) {
     console.error('Error cancelling booking:', error);
