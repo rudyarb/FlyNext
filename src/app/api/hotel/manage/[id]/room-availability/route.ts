@@ -20,8 +20,12 @@ export async function GET(
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const roomType = searchParams.get('roomType');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const startDate = searchParams.get('startDate') || today.toISOString().split('T')[0];
+    const endDate = searchParams.get('endDate') || tomorrow.toISOString().split('T')[0];
 
     // Validate dates if provided
     if ((startDate && !endDate) || (!startDate && endDate)) {

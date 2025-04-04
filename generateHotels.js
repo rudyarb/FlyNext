@@ -184,7 +184,7 @@ async function main() {
           name: `${hotelBrand} ${city.city} ${faker.helpers.arrayElement(hotelTypes)}`,
           logoPath: null,
           // Generate a realistic address
-          address: `${faker.location.streetAddress()} ${faker.location.street()}, ${city.city}, ${faker.location.state({ abbreviated: true })}`,
+          address: `${faker.location.streetAddress()} ${faker.location.street()}`,
           city: city.city,
           starRating: faker.number.int({ min: 3, max: 5 }), // Most chain hotels are 3-5 stars
           imagePaths: [],

@@ -65,7 +65,7 @@ const Navbar: React.FC = () => {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-md rounded-lg">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden">
                     <Link
                       href="/users/edit-profile"
                       className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
                     {role === "ADMIN" && (
                       <Link
                         href="/hotel-manage"
-                        className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                        className="block px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 border-t border-gray-200 dark:border-gray-600"
                         onClick={() => setDropdownOpen(false)}
                       >
                         Manage Hotels
@@ -87,7 +87,7 @@ const Navbar: React.FC = () => {
                         setDropdownOpen(false);
                         logout();
                       }}
-                      className="w-full text-left px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
+                      className="w-full text-left px-4 py-2 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 border-t border-gray-200 dark:border-gray-600"
                     >
                       Logout
                     </button>

@@ -8,6 +8,7 @@ import ImageReorderModal from '@/app/components/ImageReorderModal';
 import HotelDetailsPanel from '@/app/components/HotelDetailsPanel';
 import RoomTypesPanel from '@/app/components/RoomTypesPanel';
 import BookingsPanel from '@/app/components/BookingsPanel';
+import RoomAvailabilityPanel from '@/app/components/RoomAvailabilityPanel';
 import AuthWrapper from '@/app/components/AuthWrapper';
 import { classNames } from '@/utils/styling';
 import Link from 'next/link';
@@ -196,7 +197,8 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
   const tabs = [
     { name: 'Hotel Details', icon: FaHotel },
     { name: 'Room Types', icon: FaBed },
-    { name: 'Bookings', icon: FaCalendar }
+    { name: 'Bookings', icon: FaCalendar },
+    { name: 'Availability', icon: FaCalendar }
   ];
 
   return (
@@ -277,6 +279,10 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
 
               <TabPanel value={activeTab} index={2}>
                 <BookingsPanel hotelId={resolvedParams.hotelId} />
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={3}>
+                <RoomAvailabilityPanel hotelId={resolvedParams.hotelId} />
               </TabPanel>
             </div>
           </div>
