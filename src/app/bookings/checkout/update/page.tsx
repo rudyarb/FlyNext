@@ -1,22 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function CheckoutUpdate() {
+function CheckoutUpdateContent() {
   const [flightBookings, setFlightBookings] = useState<any[]>([]);
   const [hotelBookings, setHotelBookings] = useState<any[]>([]);
   const [creditCard, setCreditCard] = useState({ number: '', expiryMonth: '', expiryYear: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get('bookingId'); // Extract bookingId from query params
-  const token = localStorage.getItem("token"); // Get the token from local storage
+  const bookingId = searchParams.get('bookingId');
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/users/login?redirect=/bookings/checkout/update');
+      return;
+    }
+
     if (!bookingId) {
       setError('Booking ID is missing. Please go back and try again.');
       return;
@@ -29,18 +39,16 @@ export default function CheckoutUpdate() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
-            }
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         const hotelRes = await fetch('/api/hotel-booking', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
-            }
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         const flightData = await flightRes.json();
         const hotelData = await hotelRes.json();
         setFlightBookings(flightData);
@@ -49,8 +57,9 @@ export default function CheckoutUpdate() {
         setError('Failed to load booking details.');
       }
     };
+
     fetchDetails();
-  }, [bookingId]);
+  }, [bookingId, token, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -77,7 +86,7 @@ export default function CheckoutUpdate() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Replace with actual user ID
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ creditCard }),
       });
@@ -196,10 +205,18 @@ export default function CheckoutUpdate() {
           Your booking has been updated successfully! Please go to "My Bookings" to see it!
         </p>
       )}
-
-      {/* <Link href="/bookings" className="block mt-4 text-blue-600">
-        All Your Bookings
-      </Link> */}
     </div>
+  );
+}
+
+export default function CheckoutUpdate() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-4">
+        <p className="text-gray-600">Loading checkout details...</p>
+      </div>
+    }>
+      <CheckoutUpdateContent />
+    </Suspense>
   );
 }

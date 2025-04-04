@@ -30,22 +30,30 @@ export default function CreateHotelPage() {
     logoPreview: '',
     imagesPreviews: []
   });
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
+      localStorage.setItem('redirectAfterLogin', '/hotel-manage/new');
+      router.push('/users/login');
+      return;
+    }
+    setToken(storedToken);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      localStorage.setItem('redirectAfterLogin', '/hotel-manage/new');
+      router.push('/users/login');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-
-      if (!token || !payload) {
-        localStorage.setItem('redirectAfterLogin', '/hotel-manage/new');
-        router.push('/users/login');
-        return;
-      }
-
       const formDataToSend = new FormData();
       formDataToSend.append('name', formData.name);
       formDataToSend.append('address', formData.address);
@@ -90,14 +98,6 @@ export default function CreateHotelPage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      localStorage.setItem('redirectAfterLogin', '/hotel-manage/new');
-      router.push('/users/login');
-    }
-  }, [router]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

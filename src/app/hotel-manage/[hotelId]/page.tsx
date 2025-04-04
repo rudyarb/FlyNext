@@ -50,15 +50,21 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     starRating: 1,
     logo: null as File | null
   });
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
+      router.push('/users/login?redirect=/hotel-manage');
+      return;
+    }
+    setToken(storedToken);
+  }, [router]);
 
   const fetchHotelDetails = async (hotelId: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/users/login?redirect=/hotel-manage');
-        return;
-      }
+    if (!token) return;
 
+    try {
       const response = await fetch(`/api/hotel/manage/${hotelId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -86,10 +92,10 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
   };
 
   useEffect(() => {
-    if (resolvedParams.hotelId) {
+    if (resolvedParams.hotelId && token) {
       fetchHotelDetails(resolvedParams.hotelId);
     }
-  }, [resolvedParams.hotelId]);
+  }, [resolvedParams.hotelId, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

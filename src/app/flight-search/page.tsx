@@ -8,6 +8,7 @@ import Cart from '@/app/components/Cart';
 
 export default function FlightSearchPage() {
   const [isClient, setIsClient] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [source, setSource] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
@@ -19,15 +20,15 @@ export default function FlightSearchPage() {
   const [passportNumber, setPassportNumber] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
-  const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
-    setIsClient(true); // Ensure rendering happens only on the client
-    setIsLoaded(true); // Mark the component as loaded
+    setIsClient(true);
+    setToken(localStorage.getItem("token"));
+    setIsLoaded(true);
   }, []);
 
   if (!isClient) {
-    return null; // Prevent rendering on the server
+    return null;
   }
 
   const handleSearch = async (e: React.FormEvent) => {

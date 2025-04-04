@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import RoomTypeForm from './RoomTypeForm';
 
@@ -26,11 +26,22 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
   const [isAddingRoom, setIsAddingRoom] = useState(false);
   const [editingRoomType, setEditingRoomType] = useState<RoomType | null>(null);
   const [error, setError] = useState<string>('');
+  const [token, setToken] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    setToken(localStorage.getItem('token'));
+  }, []);
 
   const handleAddSubmit = async (formData: FormData) => {
+    if (!token) return;
     try {
       const response = await fetch(`/api/hotel/manage/${hotelId}/create-roomtype`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
 
@@ -47,9 +58,13 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
   };
 
   const handleEditSubmit = async (formData: FormData) => {
+    if (!token) return;
     try {
       const response = await fetch(`/api/hotel/manage/${hotelId}/edit-roomtype`, {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
 
@@ -66,12 +81,18 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
   };
 
   const handleDelete = async (roomTypeId: string) => {
+    if (!token) return;
     if (!confirm('Are you sure you want to delete this room type?')) return;
 
     try {
       const response = await fetch(
         `/api/hotel/manage/${hotelId}/roomtype/${roomTypeId}`,
-        { method: 'DELETE' }
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
       );
 
       if (!response.ok) {
@@ -84,6 +105,8 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to delete room type');
     }
   };
+
+  if (!isClient) return null;
 
   return (
     <div className="p-6">

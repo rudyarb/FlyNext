@@ -1,5 +1,7 @@
+import { ReactNode } from 'react';
+
 export interface FeatureCard {
-  icon: JSX.Element;
+  icon: ReactNode;
   title: string;
   description: string;
 }

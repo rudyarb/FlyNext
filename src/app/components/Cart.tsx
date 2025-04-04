@@ -9,7 +9,13 @@ export default function Cart() {
   const [flights, setFlights] = useState<FlightBooking[]>([]); // Explicitly typed
   const [hotels, setHotels] = useState<HotelDetailsProps[]>([]); // Explicitly typed
   const [isOpen, setIsOpen] = useState(false);
-  const token = localStorage.getItem('token'); // Retrieve the token from LocalStorage
+  const [isClient, setIsClient] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    setToken(localStorage.getItem('token'));
+  }, []);
 
   const fetchCartData = async () => {
     try {
@@ -63,6 +69,8 @@ export default function Cart() {
     }
     setIsOpen(!isOpen);
   };
+
+  if (!isClient) return null;
 
   return (
     <div className="fixed bottom-4 right-4">

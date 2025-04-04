@@ -22,22 +22,25 @@ export default function HotelManagePage() {
   const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (!storedToken) {
+      router.push('/users/login?redirect=/hotel-manage');
+      return;
+    }
+    setToken(storedToken);
+  }, [router]);
+
+  useEffect(() => {
+    if (!token) return;
+
     async function fetchHotels() {
       try {
-        const token = localStorage.getItem('token');
-        const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-        
-        if (!token || !payload) {
-          router.push('/users/login?redirect=/hotel-manage');
-          return;
-        }
-
         const response = await fetch('/api/hotel/manage', {
           headers: {
             'Authorization': `Bearer ${token}`
-            // middleware will handle setting x-user header
           }
         });
         
@@ -56,7 +59,7 @@ export default function HotelManagePage() {
     }
 
     fetchHotels();
-  }, [router]);
+  }, [token]);
 
   if (loading) {
     return (

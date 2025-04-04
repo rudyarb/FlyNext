@@ -176,7 +176,14 @@ export default function HotelDetailsPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Hotel Details Section */}
-          <HotelDetails {...hotelDetails} />
+          <HotelDetails 
+            name={hotelDetails.name}
+            address={hotelDetails.address}
+            city={hotelDetails.city}
+            starRating={hotelDetails.starRating}
+            logoPath={hotelDetails.logo}
+            imagePaths={hotelDetails.images}
+          />
 
           {/* Date Selection Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import React from 'react';
 import FlightList from '../../components/FlightSearch'; // Corrected import path
 import { Flight } from '../../components/FlightSearch'; // Corrected import path
@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation'; // Import useSearchParams
 import Cart from '@/app/components/Cart';
 
-const FlightSearchUpdatePage = () => {
+const FlightSearchContent = () => {
   const [isClient, setIsClient] = useState(false);
   const [source, setSource] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
@@ -296,6 +296,18 @@ const FlightSearchUpdatePage = () => {
       )}
       <Cart />
     </div>
+  );
+};
+
+const FlightSearchUpdatePage = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen bg-white dark:bg-gray-900">
+        <p className="text-gray-800 dark:text-gray-200">Loading...</p>
+      </div>
+    }>
+      <FlightSearchContent />
+    </Suspense>
   );
 };
 

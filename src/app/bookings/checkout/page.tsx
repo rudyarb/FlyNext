@@ -11,30 +11,35 @@ export default function Checkout() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
-  const token = localStorage.getItem("token"); // Get the token from local storage
 
   useEffect(() => {
-    // Fetch all flight and hotel bookings
+    // Move localStorage access to useEffect
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    // Only fetch if we have a token
+    if (!token) return;
+
     const fetchDetails = async () => {
       try {
-        // console.log(token);
         const flightRes = await fetch('/api/flight-booking', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
-            }
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         const hotelRes = await fetch('/api/hotel-booking', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Replace with actual user ID (after authentication)
-            }
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         const flightData = await flightRes.json();
         const hotelData = await hotelRes.json();
         setFlightBookings(flightData);
@@ -43,8 +48,9 @@ export default function Checkout() {
         setError('Failed to load booking details.');
       }
     };
+
     fetchDetails();
-  }, []);
+  }, [token]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,7 +72,7 @@ export default function Checkout() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Replace with actual user ID
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ creditCard }),
       });

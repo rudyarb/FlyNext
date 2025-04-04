@@ -23,8 +23,17 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
   });
+  const [token, setToken] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    setToken(localStorage.getItem('token'));
+  }, []);
 
   const fetchAvailability = async () => {
+    if (!token) return;
+
     setIsLoading(true);
     setError('');
 
@@ -39,7 +48,7 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
         `/api/hotel/manage/${hotelId}/room-availability?${queryParams}`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );
@@ -57,9 +66,7 @@ const RoomAvailabilityPanel: React.FC<RoomAvailabilityPanelProps> = ({ hotelId }
     }
   };
 
-  useEffect(() => {
-    fetchAvailability();
-  }, [hotelId]);
+  if (!isClient) return null;
 
   return (
     <div className="p-6">
