@@ -1,52 +1,62 @@
 import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { verifyHotelOwner } from "@/middleware/ownerAuth";
 
-// TODO: for editing/updating/deleting hotels
-
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-): Promise<NextResponse> {
-    const auth = await verifyHotelOwner(request, params.id);
-    if ('error' in auth) return auth.error as NextResponse;
-
-    // Proceed with hotel update logic
-    try {
-        const data = await request.json();
-        const updated = await prisma.hotel.update({
-            where: { id: params.id },
-            data
-        });
-        return NextResponse.json(updated);
-    } catch (error) {
-        return NextResponse.json(
-            { error: "Failed to update hotel" },
-            { status: 500 }
-        );
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const userHeader = request.headers.get("x-user");
+    
+    if (!userHeader) {
+      return NextResponse.json(
+        { error: "Unauthorized - User not authenticated" },
+        { status: 401 }
+      );
     }
-}
 
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-): Promise<NextResponse> {
-    const auth = await verifyHotelOwner(request, params.id);
-    if ('error' in auth) return auth.error as NextResponse;
-
-    // Proceed with hotel deletion logic
-    try {
-        await prisma.hotel.delete({
-            where: { id: params.id }
-        });
-        return NextResponse.json(
-            { message: "Hotel deleted successfully" }
-        );
-    } catch (error) {
-        return NextResponse.json(
-            { error: "Failed to delete hotel" },
-            { status: 500 }
-        );
+    const user = JSON.parse(userHeader);
+    
+    // Get hotel owner details
+    const hotelOwner = await prisma.hotelOwner.findFirst({
+      where: {
+        userId: user.id
+      }
+    });
+    
+    if (!hotelOwner) {
+      return NextResponse.json(
+        { error: "Forbidden - User is not a hotel owner" },
+        { status: 403 }
+      );
     }
+
+    // Get hotel details
+    const hotel = await prisma.hotel.findFirst({
+      where: {
+        id: id,
+        ownerId: hotelOwner.id
+      },
+      include: {
+        roomTypes: true
+      }
+    });
+
+    if (!hotel) {
+      return NextResponse.json(
+        { error: "Hotel not found or access denied" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(hotel);
+  } catch (error) {
+    console.error('Error fetching hotel details:', error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

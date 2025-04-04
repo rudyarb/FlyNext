@@ -1,25 +1,29 @@
 import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { getHotelOwnerId } from "@utils/helpers";
 
 export async function GET(request: NextRequest) {
     try {
-        // Get user session info (assuming user ID is passed in headers)
-        const userId = request.headers.get("x-user");
-        console.log("User ID from headers:", userId);
+        const userHeader = request.headers.get("x-user");
         
-        if (!userId) {
+        if (!userHeader) {
             return NextResponse.json(
                 { error: "Unauthorized - User not authenticated" },
                 { status: 401 }
             );
         }
 
-        // Get hotel owner ID
-        const hotelOwnerId = await getHotelOwnerId(userId);
+        // Parse the stringified user data
+        const user = JSON.parse(userHeader);
         
-        if (!hotelOwnerId) {
+        // Get hotel owner details
+        const hotelOwner = await prisma.hotelOwner.findFirst({
+            where: {
+                userId: user.id
+            }
+        });
+        
+        if (!hotelOwner) {
             return NextResponse.json(
                 { error: "Forbidden - User is not a hotel owner" },
                 { status: 403 }
@@ -29,14 +33,40 @@ export async function GET(request: NextRequest) {
         // Get all hotels owned by the user
         const hotels = await prisma.hotel.findMany({
             where: {
-                ownerId: hotelOwnerId
+                ownerId: hotelOwner.id
             },
             include: {
-                roomTypes: true
+                roomTypes: true,
+                hotelBookings: {
+                    where: {
+                        status: "CONFIRMED"
+                    }
+                },
+                _count: {
+                    select: {
+                        roomTypes: true,
+                        hotelBookings: {
+                            where: {
+                                status: "CONFIRMED"
+                            }
+                        }
+                    }
+                }
             }
         });
 
-        return NextResponse.json(hotels, { status: 200 });
+        const hotelSummaries = hotels.map(hotel => ({
+            id: hotel.id,
+            name: hotel.name,
+            city: hotel.city,
+            address: hotel.address,
+            starRating: hotel.starRating,
+            logoPath: hotel.logoPath,
+            totalRooms: hotel._count.roomTypes,
+            activeBookings: hotel._count.hotelBookings
+        }));
+
+        return NextResponse.json(hotelSummaries, { status: 200 });
 
     } catch (error) {
         console.error("Error fetching hotels:", error);

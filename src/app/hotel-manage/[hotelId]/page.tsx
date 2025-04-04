@@ -1,8 +1,23 @@
 'use client';
 
+import { use } from 'react';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { FaHotel, FaBed, FaCalendar, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash } from 'react-icons/fa';
+import ImageReorderModal from '@/app/components/ImageReorderModal';
+import RoomTypeManager from '@/app/components/RoomTypeManager';
+import AuthWrapper from '@/app/components/AuthWrapper';
+
+interface HotelDetails {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  starRating: number;
+  logoPath: string | null;
+  imagePaths: string[];
+  roomTypes: RoomType[];
+}
 
 interface RoomType {
   id: string;
@@ -14,330 +29,318 @@ interface RoomType {
   availability: number;
 }
 
-interface HotelDetails {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  starRating: number;
-  logo: string | null;
-  images: string[];
-  roomTypes: RoomType[];
-}
-
-interface Booking {
-  id: string;
-  checkInDate: string;
-  checkOutDate: string;
-  status: 'CONFIRMED' | 'CANCELLED';
-  user: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  roomType: {
-    type: string;
-  };
-}
-
-export default function HotelManageDetailsPage() {
-  const params = useParams();
+export default function HotelManagePage({ params }: { params: Promise<{ hotelId: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
-  const hotelId = params.hotelId as string;
-
-  const [activeTab, setActiveTab] = useState<'details' | 'rooms' | 'bookings'>('details');
   const [hotel, setHotel] = useState<HotelDetails | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    city: '',
+    starRating: 1
+  });
 
-  useEffect(() => {
-    async function fetchHotelData() {
-      try {
-        const token = localStorage.getItem('token');
-        const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-        
-        if (!token || !payload) {
-          router.push('/users/login?redirect=/hotel-manage');
-          return;
-        }
-
-        const headers = {
-          'x-user': payload.id, // Send just the ID, not a stringified object
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        };
-
-        const [hotelRes, bookingsRes] = await Promise.all([
-          fetch(`/api/hotel/manage/${hotelId}`, { headers }),
-          fetch(`/api/hotel/manage/${hotelId}/bookings`, { headers })
-        ]);
-
-        if (hotelRes.status === 401 || bookingsRes.status === 401) {
-          router.push('/users/login?redirect=/hotel-manage');
-          return;
-        }
-
-        if (!hotelRes.ok || !bookingsRes.ok) {
-          throw new Error('Failed to fetch hotel data');
-        }
-
-        const [hotelData, bookingsData] = await Promise.all([
-          hotelRes.json(),
-          bookingsRes.json()
-        ]);
-
-        setHotel(hotelData);
-        setBookings(bookingsData.bookings);
-      } catch (error) {
-        setError('Failed to load hotel details');
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchHotelData();
-  }, [hotelId, router]);
-
-  const handleCancelBooking = async (bookingId: string) => {
+  const fetchHotelDetails = async (hotelId: string) => {
     try {
       const token = localStorage.getItem('token');
-      const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      if (!token || !payload) {
+      if (!token) {
         router.push('/users/login?redirect=/hotel-manage');
         return;
       }
 
-      const response = await fetch(`/api/hotel/manage/${hotelId}/bookings/${bookingId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/hotel/manage/${hotelId}`, {
         headers: {
-          'x-user': JSON.stringify({ id: payload.id }),
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: 'CANCELLED' })
+          'Authorization': `Bearer ${token}`
+        }
       });
+      const data = await response.json();
 
-      if (!response.ok) throw new Error('Failed to cancel booking');
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch hotel details');
+      }
 
-      // Refresh bookings
-      const bookingsRes = await fetch(`/api/hotel/manage/${hotelId}/bookings`);
-      const bookingsData = await bookingsRes.json();
-      setBookings(bookingsData.bookings);
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
+      setHotel(data);
+      setFormData({
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        starRating: data.starRating
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
+  useEffect(() => {
+    if (resolvedParams.hotelId) {
+      fetchHotelDetails(resolvedParams.hotelId);
+    }
+  }, [resolvedParams.hotelId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update hotel');
+      }
+
+      setHotel(prev => prev ? { ...prev, ...formData } : null);
+      setEditMode(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update hotel');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+
+    const formData = new FormData();
+    Array.from(e.target.files).forEach(file => {
+      formData.append('images', file);
+    });
+
+    try {
+      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload images');
+      }
+
+      setHotel(prev => prev ? { ...prev, imagePaths: data.imagePaths } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload images');
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-700 dark:text-gray-300">Loading hotel details...</div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  if (error || !hotel) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-red-500">{error}</p>
-          <button
-            onClick={() => router.push('/hotel-manage')}
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Return to hotel management
-          </button>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
+
+  if (!hotel) return null;
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <AuthWrapper>
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {hotel.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                {hotel.city} • {hotel.address}
-              </p>
-            </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+          Hotel Management
+        </h1>
+
+        {/* Hotel Details Form */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Hotel Details
+            </h2>
             <button
-              onClick={() => router.push('/hotel-manage')}
-              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 
-                dark:hover:text-white transition-colors"
+              onClick={() => setEditMode(!editMode)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Back to Hotels
+              {editMode ? 'Cancel' : 'Edit Details'}
             </button>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex gap-8">
-              {['details', 'rooms', 'bookings'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as typeof activeTab)}
-                  className={`pb-4 px-2 capitalize ${
-                    activeTab === tab
-                      ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Content */}
-          {activeTab === 'details' && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              {/* Add hotel details editing form here */}
-            </div>
-          )}
-
-          {activeTab === 'rooms' && (
-            <div className="space-y-6">
-              {hotel.roomTypes.map((room) => (
-                <div
-                  key={room.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                        {room.type}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        ${room.pricePerNight} per night
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {/* Add edit handler */}}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-500"
-                      >
-                        <FaEdit />
-                      </button>
-                      <button
-                        onClick={() => {/* Add delete handler */}}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Availability:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
-                        {room.availability}/{room.quantity}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600 dark:text-gray-400">Amenities:</span>
-                      <span className="ml-2 text-gray-900 dark:text-white">
-                        {room.amenities.join(', ')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => {/* Add new room type handler */}}
-                className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 
-                  rounded-lg text-gray-600 dark:text-gray-400 hover:border-blue-500 
-                  hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
-              >
-                <FaPlus />
-                Add New Room Type
-              </button>
-            </div>
-          )}
-
-          {activeTab === 'bookings' && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-900">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Guest
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Room Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Dates
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {bookings.map((booking) => (
-                      <tr key={booking.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {`${booking.user.firstName} ${booking.user.lastName}`}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {booking.user.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {booking.roomType.type}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {new Date(booking.checkInDate).toLocaleDateString()} - 
-                            {new Date(booking.checkOutDate).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                            ${booking.status === 'CONFIRMED' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`}
-                          >
-                            {booking.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {booking.status === 'CONFIRMED' && (
-                            <button
-                              onClick={() => handleCancelBooking(booking.id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 
-                                dark:hover:text-red-300"
-                            >
-                              Cancel
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {editMode ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Hotel Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Star Rating
+                </label>
+                <select
+                  value={formData.starRating}
+                  onChange={(e) => setFormData(prev => ({ ...prev, starRating: Number(e.target.value) }))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  {[1, 2, 3, 4, 5].map(rating => (
+                    <option key={rating} value={rating}>
+                      {rating} Star{rating > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setEditMode(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="font-semibold">Name:</span> {hotel.name}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="font-semibold">Address:</span> {hotel.address}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="font-semibold">City:</span> {hotel.city}
+              </p>
+              <p className="text-gray-600 dark:text-gray-300">
+                <span className="font-semibold">Rating:</span> {hotel.starRating} Stars
+              </p>
             </div>
           )}
         </div>
+
+        {/* Images Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Hotel Images
+            </h2>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setIsImageModalOpen(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Manage Images
+              </button>
+              <label className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer">
+                Upload Images
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {hotel.imagePaths.map((path, index) => (
+              <div key={index} className="relative aspect-square">
+                <img
+                  src={path}
+                  alt={`Hotel image ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Room Types Section */}
+        <RoomTypeManager hotelId={resolvedParams.hotelId} roomTypes={hotel.roomTypes} />
+
+        {/* Image Reorder Modal */}
+        {isImageModalOpen && (
+          <ImageReorderModal
+            images={hotel.imagePaths}
+            onClose={() => setIsImageModalOpen(false)}
+            onSave={async (newOrder: string[]) => {
+              try {
+                const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ imagePaths: newOrder }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                  throw new Error(data.error || 'Failed to update image order');
+                }
+
+                setHotel(prev => prev ? { ...prev, imagePaths: newOrder } : null);
+                setIsImageModalOpen(false);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to update image order');
+              }
+            }}
+          />
+        )}
       </div>
-    </main>
+    </AuthWrapper>
   );
 }

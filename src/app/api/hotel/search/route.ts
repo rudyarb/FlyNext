@@ -20,7 +20,7 @@ interface HotelResponse {
   city: string;
   address: string;
   starRating: number;
-  logo: string | null;
+  logoPath: string | null;
   startingPrice: number;
   availableRooms: {
     id: string;
@@ -46,28 +46,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
-    // Validate required parameters
     if (!checkIn || !checkOut || !city) {
       return NextResponse.json(
-        { error: 'checkIn, checkOut, and city are required parameters' } as const,
+        { error: 'checkIn, checkOut, and city are required parameters' },
         { status: 400 }
       );
     }
 
-    // Validate dates
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
     
     if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
       return NextResponse.json(
-        { error: 'Invalid date format' } as const,
+        { error: 'Invalid date format' },
         { status: 400 }
       );
     }
 
     if (checkOutDate <= checkInDate) {
       return NextResponse.json(
-        { error: 'Check-out date must be after check-in date' } as const,
+        { error: 'Check-out date must be after check-in date' },
         { status: 400 }
       );
     }
@@ -103,7 +101,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         city: true,
         address: true,
         starRating: true,
-        logo: true,
+        logoPath: true,
         roomTypes: {
           select: {
             id: true,
@@ -119,7 +117,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                       { checkOutDate: { gte: checkInDate } }
                     ]
                   }
-                ]
+                ],
+                status: "CONFIRMED"
               }
             }
           }
@@ -158,8 +157,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           city: hotel.city,
           address: hotel.address,
           starRating: hotel.starRating,
-          logo: hotel.logo,
+          logoPath: hotel.logoPath,
           startingPrice,
+          availableRooms
         };
       })
       .filter((hotel): hotel is HotelResponse => hotel !== null)
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('Search error:', error instanceof Error ? error.message : error);
     return NextResponse.json(
-      { error: 'Failed to fetch hotels' } as const,
+      { error: 'Failed to fetch hotels' },
       { status: 500 }
     );
   }

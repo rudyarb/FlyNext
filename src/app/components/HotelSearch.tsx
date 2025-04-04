@@ -15,7 +15,7 @@ interface Hotel {
   city: string;
   address: string;
   starRating: number;
-  logo: string | null;
+  logoPath: string | null; // Updated from logo
   startingPrice: number;
 }
 
@@ -512,9 +512,9 @@ const HotelSearch: React.FC = () => {
             <div className="flex flex-col md:flex-row">
               {/* Image section - Updated styling with fixed dimensions */}
               <div className="w-full md:w-48 h-48 md:h-48 relative bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                {hotel.logo ? (
+                {hotel.logoPath ? (
                   <img
-                    src={hotel.logo}
+                    src={`/api/images${hotel.logoPath}`}
                     alt={hotel.name}
                     className="w-full h-full object-cover"
                   />

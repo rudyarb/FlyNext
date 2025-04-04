@@ -25,13 +25,9 @@ export async function middleware(req) {
 // Apply middleware only to API routes
 export const config = {
     matcher: [
-        "/api/users/profile",
-        "/api/bookings",
         "/api/bookings/:checkout",
         "/api/bookings/:invoice",
         "/api/bookings/:verify-flight",
-        "/api/flight-search",
-        "/api/flight-booking",
         "/api/hotel-booking",
         "/api/hotels/info/:hotelId/bookings",
         "/api/hotels/info/:hotelId/bookings/availability",
@@ -39,6 +35,33 @@ export const config = {
         "/api/hotels/manage/:hotelId",
         "/api/hotels/manage/:hotelId/room",
         "/api/hotels/manage/:hotelId/room/:roomId",
+
+        // User related routes
+        "/api/users/profile",
+        
+        // Booking related routes
+        "/api/bookings",
+        "/api/bookings/:path*",
+        "/api/hotel/booking/create",
+        "/api/hotel/booking/details",
+        
+        // Hotel management routes
+        "/api/hotel/manage",
+        "/api/hotel/manage/create-hotel",
+        "/api/hotel/manage/:id",
+        "/api/hotel/manage/:id/edit",
+        "/api/hotel/manage/:id/bookings",
+        "/api/hotel/manage/:id/create-roomtype",
+        "/api/hotel/manage/:id/room-availability",
+        
+        // Notification routes
         "/api/notifications",
-    ], // Runs for all /api routes
+        
+        // Flight related routes
+        "/api/flight-booking",
+        "/api/flight-search",
+        
+        // Protected hotel search features
+        "/api/hotel/search/details/:id/date-availability"
+    ]
 };

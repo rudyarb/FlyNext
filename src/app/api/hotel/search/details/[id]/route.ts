@@ -7,7 +7,6 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
     try {
-        // Await the params
         const { id } = await params;
 
         if (!id) {
@@ -19,14 +18,41 @@ export async function GET(
 
         const hotel = await prisma.hotel.findUnique({
             where: { id },
-            include: {
-                roomTypes: true,
-            },
+            select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+                starRating: true,
+                logoPath: true,
+                imagePaths: true,
+                roomTypes: {
+                    select: {
+                        id: true,
+                        type: true,
+                        amenities: true,
+                        pricePerNight: true,
+                        images: true,
+                        quantity: true,
+                        availability: true
+                    }
+                }
+            }
         });
+
+        if (!hotel) {
+            return NextResponse.json(
+                { error: 'Hotel not found' } as const,
+                { status: 404 }
+            );
+        }
 
         return NextResponse.json(
             { hotelDetails: hotel } as const,
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
+            { 
+                status: 200, 
+                headers: { 'Content-Type': 'application/json' } 
+            }
         );
     } catch (error) {
         console.error('Hotel details error:', error instanceof Error ? error.message : error);

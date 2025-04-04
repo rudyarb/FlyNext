@@ -12,7 +12,7 @@ interface RoomTypeCardProps {
   pricePerNight: number;
   availableRooms: number;
   totalRooms: number;
-  images: string[];
+  images: string[]; // These are now file paths
   showAvailability?: boolean;
   isAvailable?: boolean;
   checkIn?: string; // Add this prop
@@ -59,7 +59,11 @@ export default function RoomTypeCard({
       ${!isAvailable && showAvailability ? 'opacity-60' : ''}`}>
       {/* Room Images Carousel - Fixed height */}
       <div className="h-64 flex-shrink-0">
-        <ImageCarousel images={images} alt={type} height="h-64" />
+        <ImageCarousel 
+          images={images.map(path => `/api/images${path}`)} 
+          alt={type} 
+          height="h-64" 
+        />
       </div>
 
       {/* Room Info - Flex grow with internal scrolling if needed */}

@@ -40,15 +40,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const roomType = await prisma.roomType.create({
             data: {
                 type,
-                amenities: JSON.stringify(amenities),
-                pricePerNight: formattedPrice, // Use formatted price
-                images: JSON.stringify(images),
+                amenities,  // Should be JSON
+                pricePerNight: formattedPrice,
+                images,     // Should be JSON
                 quantity,
                 availability: quantity,
-                hotel: {
-                    connect: { id: hotelId }
-                }
+                hotelId
             },
+            select: {
+                id: true,
+                type: true,
+                amenities: true,
+                pricePerNight: true,
+                images: true,
+                quantity: true,
+                availability: true
+            }
         });
         
         return NextResponse.json(
