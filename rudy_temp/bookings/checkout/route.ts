@@ -112,7 +112,7 @@ export async function POST(request: Request): Promise<Response> {
                 data: { bookingId: newBooking.id },
             });
 
-            await sendNotification(userId, `Itinerary confirmed (ID: ${newBooking.id})`);
+            await sendNotification(userId, `Booking confirmed (ID: ${newBooking.id})`);
 
             return new Response(JSON.stringify(newBooking), {
                 status: 201,

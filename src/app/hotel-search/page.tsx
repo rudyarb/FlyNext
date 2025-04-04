@@ -2,6 +2,7 @@
 
 import HotelSearch from '@/app/components/HotelSearch';
 import Cart from '@/app/components/Cart';
+import Link from 'next/link'; // Import Link for navigation
 
 export default function HotelSearchPage() {
   return (
@@ -25,6 +26,16 @@ export default function HotelSearchPage() {
         </div>
       </div>
       <Cart />
+
+      {/* Proceed to Checkout Link */}
+      <div className="text-center mt-8">
+        <Link
+          href="/bookings/checkout"
+          className="inline-block px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+        >
+          Proceed to Checkout
+        </Link>
+      </div>
     </main>
   );
 }

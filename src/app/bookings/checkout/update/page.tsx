@@ -16,16 +16,18 @@ function CheckoutUpdateContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    setToken(storedToken);
-  }, []);
+  // useEffect(() => {
+  //   const storedToken = localStorage.getItem("token");
+  //   setToken(storedToken);
+  // }, []);
 
   useEffect(() => {
-    if (!token) {
-      router.push('/users/login?redirect=/bookings/checkout/update');
-      return;
-    }
+    // if (!token) {
+    //   router.push('/users/login?redirect=/bookings/checkout/update');
+    //   return;
+    // }
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
 
     if (!bookingId) {
       setError('Booking ID is missing. Please go back and try again.');
@@ -156,9 +158,11 @@ function CheckoutUpdateContent() {
           <h2 className="text-xl font-semibold">Hotel Bookings</h2>
           {hotelBookings.map((hotel, index) => (
             <div key={index} className="border p-2 mb-2">
-              <p>Hotel Name: {hotel.name}</p>
-              <p>Location: {hotel.location}</p>
-              <p>Price per night: {hotel.pricePerNight}</p>
+              <p>Hotel ID: {hotel.hotelId}</p>
+              <p>Room ID: {hotel.roomId}</p>
+              <p>Booking Status: {hotel.status}</p>
+              <p>Check-In Date: {hotel.checkInDate}</p>
+              <p>Check-Out Date: {hotel.checkOutDate}</p>
             </div>
           ))}
         </div>
