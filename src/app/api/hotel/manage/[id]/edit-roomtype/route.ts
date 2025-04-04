@@ -34,6 +34,80 @@ export async function PUT(
       );
     }
 
+    // Get existing room type to check current quantity
+    const existingRoomType = await prisma.roomType.findUnique({
+      where: { id: roomTypeId },
+      include: {
+        hotelBookings: {
+          where: {
+            status: "CONFIRMED",
+          },
+          orderBy: {
+            bookingDate: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!existingRoomType) {
+      return NextResponse.json(
+        { error: "Room type not found" },
+        { status: 404 }
+      );
+    }
+
+    // If quantity is being reduced, check for overbookings
+    if (quantity < existingRoomType.quantity) {
+      // Get all date ranges where bookings exist
+      const bookingRanges = await prisma.hotelBooking.groupBy({
+        by: ['checkInDate', 'checkOutDate'],
+        where: {
+          roomId: roomTypeId,
+          status: 'CONFIRMED',
+        },
+        _count: {
+          id: true
+        }
+      });
+
+      // For each date range, if bookings exceed new quantity, cancel most recent bookings
+      for (const range of bookingRanges) {
+        const overlappingBookings = await prisma.hotelBooking.findMany({
+          where: {
+            roomId: roomTypeId,
+            status: 'CONFIRMED',
+            AND: [
+              { checkInDate: { lte: range.checkOutDate } },
+              { checkOutDate: { gte: range.checkInDate } }
+            ]
+          },
+          orderBy: {
+            bookingDate: 'desc'
+          }
+        });
+
+        if (overlappingBookings.length > quantity) {
+          const bookingsToCancel = overlappingBookings.slice(0, overlappingBookings.length - quantity);
+          
+          for (const booking of bookingsToCancel) {
+            await prisma.hotelBooking.update({
+              where: { id: booking.id },
+              data: { status: 'CANCELLED' }
+            });
+
+            // Send notification to user
+            await prisma.notification.create({
+              data: {
+                userId: booking.userId,
+                message: `Your booking for ${type} room has been cancelled due to reduced room availability.`,
+                read: false
+              }
+            });
+          }
+        }
+      }
+    }
+
     // Handle new image uploads
     const newImagePaths = [];
     for (const file of imageFiles) {

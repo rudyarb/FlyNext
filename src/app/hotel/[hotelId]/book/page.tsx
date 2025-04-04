@@ -204,8 +204,8 @@ export default function BookingPage() {
               Important Information
             </h3>
             <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
-              <li>Check-in time starts at 3 PM</li>
-              <li>Check-out time is 12 PM</li>
+              <li>Check in anytime after 12:00am on the check-in date</li>
+              <li>Check out before 11:59pm on the check-out date</li>
               <li>Please present valid ID and credit card at check-in</li>
               <li>No smoking in rooms</li>
             </ul>

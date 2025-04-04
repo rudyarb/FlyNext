@@ -4,6 +4,21 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
+const formatDate = (dateString: string) => {
+  try {
+    // Split the date string and ensure proper formatting
+    const [year, month, day] = dateString.split('-');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      .toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+  } catch (e) {
+    return 'Invalid date';
+  }
+};
+
 interface Booking {
   id: string;
   checkInDate: string;
@@ -73,7 +88,13 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
       const data = await response.json();
 
       if (!response.ok) throw new Error(data.error);
-      setBookings(data.bookings);
+      
+      // Sort bookings by check-in date in ascending order
+      const sortedBookings = [...data.bookings].sort((a, b) => 
+        new Date(a.checkInDate).getTime() - new Date(b.checkInDate).getTime()
+      );
+      
+      setBookings(sortedBookings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch bookings');
     } finally {
@@ -269,10 +290,10 @@ export default function BookingsPanel({ hotelId }: BookingsPanelProps) {
                       {booking.roomType.type}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(booking.checkInDate).toLocaleDateString()}
+                      {formatDate(booking.checkInDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {new Date(booking.checkOutDate).toLocaleDateString()}
+                      {formatDate(booking.checkOutDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full
