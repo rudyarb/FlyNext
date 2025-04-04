@@ -96,11 +96,11 @@ model FlightBooking {
 model Hotel {
   id            String         @id @default(uuid())
   name          String
-  logoPath      String?       // Changed from logo
+  logoUrl       String?       // Changed from logoPath for clarity
   address       String
   city          String
   starRating    Int
-  imagePaths    String[]      // Changed from Json to String[]
+  imageUrls     String[]      // Changed from imagePaths for clarity
   ownerId       String
   owner         HotelOwner     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   roomTypes     RoomType[]
@@ -112,7 +112,7 @@ model RoomType {
   type          String
   amenities     Json
   pricePerNight Float
-  images        Json
+  imageUrls     String[]      // Changed from Json to String[] for consistency
   hotelId       String
   quantity      Int
   availability  Int

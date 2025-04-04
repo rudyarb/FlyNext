@@ -2,7 +2,7 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { verifyHotelOwner } from "@/middleware/ownerAuth";
-import { saveFile } from "@utils/fileUpload";
+import { uploadToCloudinary } from "@utils/cloudinary";
 
 export async function POST(
   request: NextRequest,
@@ -74,21 +74,21 @@ export async function POST(
     }
 
     // Handle image uploads
-    const imagePaths = [];
+    const imageUrls = [];
     for (const file of imageFiles) {
-      const result = await saveFile(file, hotelId, 'image');
+      const result = await uploadToCloudinary(file, `rooms/${hotelId}`);
       if (!result.success) {
         return NextResponse.json(
           { error: result.error || "Failed to upload images" },
           { status: 400 }
         );
       }
-      if (result.path) {
-        imagePaths.push(result.path);
+      if (result.url) {
+        imageUrls.push(result.url);
       }
     }
 
-    // Create room type
+    // Create room type with Cloudinary URLs
     const roomType = await prisma.roomType.create({
       data: {
         type,
@@ -96,7 +96,7 @@ export async function POST(
         quantity,
         availability: quantity,
         amenities,
-        images: imagePaths,
+        imageUrls,     // Changed from images
         hotelId
       }
     });

@@ -2,7 +2,7 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { verifyHotelOwner } from "@/middleware/ownerAuth";
-import { saveFile } from "@utils/fileUpload";
+import { uploadToCloudinary } from "@utils/cloudinary";
 
 export async function PUT(
   request: NextRequest,
@@ -109,16 +109,16 @@ export async function PUT(
     }
 
     // Handle new image uploads
-    const newImagePaths = [];
+    const newImageUrls = [];
     for (const file of imageFiles) {
-      const result = await saveFile(file, hotelId, 'image');
-      if (result.success && result.path) {
-        newImagePaths.push(result.path);
+      const result = await uploadToCloudinary(file, `rooms/${hotelId}`);
+      if (result.success && result.url) {
+        newImageUrls.push(result.url);
       }
     }
 
     // Combine existing and new images
-    const allImages = [...existingImages, ...newImagePaths];
+    const allImages = [...existingImages, ...newImageUrls];
 
     // Update room type
     const updatedRoomType = await prisma.roomType.update({
@@ -131,7 +131,7 @@ export async function PUT(
         pricePerNight,
         quantity,
         amenities: amenities,
-        images: allImages,
+        imageUrls: allImages,
         availability: quantity
       }
     });

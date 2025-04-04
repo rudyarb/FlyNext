@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
             city: hotel.city,
             address: hotel.address,
             starRating: hotel.starRating,
-            logoPath: hotel.logoPath,
+            logoUrl: hotel.logoUrl,  // Changed from logoPath
             totalRooms: hotel._count.roomTypes,
             activeBookings: hotel._count.hotelBookings
         }));

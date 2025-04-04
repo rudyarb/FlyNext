@@ -2,7 +2,7 @@ import { prisma } from "@utils/db";
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { getHotelOwnerId } from "@utils/helpers";
-import { saveFile } from "@utils/fileUpload";
+import { uploadToCloudinary } from '@utils/cloudinary';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -54,7 +54,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create hotel first to get the ID
+    // Upload logo if provided
+    let logoUrl = null;
+    if (logoFile) {
+      const result = await uploadToCloudinary(logoFile, 'logos');
+      if (!result.success) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      logoUrl = result.url;
+    }
+
+    // Upload hotel images
+    const imageUrls: string[] = [];
+    for (const file of imageFiles) {
+      const result = await uploadToCloudinary(file, 'hotel-images');
+      if (result.success && result.url) {
+        imageUrls.push(result.url);
+      }
+    }
+
+    // Create hotel with Cloudinary URLs
     const newHotel = await prisma.hotel.create({
       data: {
         name,
@@ -62,52 +81,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         city,
         starRating,
         ownerId: hotelOwnerId,
-        logoPath: null,
-        imagePaths: []
+        logoUrl,
+        imageUrls
       }
     });
 
-    // Save logo if provided
-    let logoPath = null;
-    if (logoFile) {
-      const logoResult = await saveFile(logoFile, newHotel.id, 'logo');
-      if (!logoResult.success) {
-        await prisma.hotel.delete({ where: { id: newHotel.id } });
-        return NextResponse.json({ error: logoResult.error }, { status: 400 });
-      }
-      logoPath = logoResult.path;
-    }
-
-    // Save all images
-    const imagePaths: string[] = [];
-    for (const file of imageFiles) {
-      const imageResult = await saveFile(file, newHotel.id, 'image');
-      if (!imageResult.success) {
-        await prisma.hotel.delete({ where: { id: newHotel.id } });
-        return NextResponse.json({ error: imageResult.error }, { status: 400 });
-      }
-      if (imageResult.path) {
-        imagePaths.push(imageResult.path);
-      }
-    }
-
-    // Update hotel with file paths
-    const updatedHotel = await prisma.hotel.update({
-      where: { id: newHotel.id },
-      data: {
-        logoPath,
-        imagePaths
-      },
-      select: {
-        id: true,
-        name: true,
-        logoPath: true
-      }
-    });
-
-    return NextResponse.json({ newHotelInfo: updatedHotel },
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return NextResponse.json({ newHotelInfo: newHotel }, { status: 200 });
   } catch (error) {
     console.error('Error creating hotel:', error);
     return NextResponse.json(

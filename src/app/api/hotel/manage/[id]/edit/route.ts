@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { verifyHotelOwner } from "@/middleware/ownerAuth";
 import { saveFile } from "@utils/fileUpload";
+import { uploadToCloudinary } from "@utils/cloudinary";
 
 export async function PUT(
   request: NextRequest,
@@ -68,7 +69,7 @@ export async function POST(
 
     // Handle logo upload
     if (logo) {
-      const result = await saveFile(logo, id, 'logo');
+      const result = await uploadToCloudinary(logo, `logos/${id}`);
       if (!result.success) {
         return NextResponse.json(
           { error: 'Failed to upload logo' },
@@ -78,8 +79,8 @@ export async function POST(
 
       const updatedHotel = await prisma.hotel.update({
         where: { id },
-        data: { logoPath: result.path },
-        select: { logoPath: true }
+        data: { logoUrl: result.url },
+        select: { logoUrl: true }
       });
 
       return NextResponse.json(updatedHotel, { status: 200 });
@@ -89,7 +90,7 @@ export async function POST(
     if (images.length) {
       const hotel = await prisma.hotel.findUnique({
         where: { id },
-        select: { imagePaths: true }
+        select: { imageUrls: true }
       });
 
       if (!hotel) {
@@ -99,20 +100,20 @@ export async function POST(
         );
       }
 
-      const newPaths: string[] = [];
+      const newUrls: string[] = [];
       for (const file of images) {
-        const result = await saveFile(file, id, 'image');
-        if (result.success && result.path) {
-          newPaths.push(result.path);
+        const result = await uploadToCloudinary(file, `hotel-images/${id}`);
+        if (result.success && result.url) {
+          newUrls.push(result.url);
         }
       }
 
       const updatedHotel = await prisma.hotel.update({
         where: { id },
         data: {
-          imagePaths: [...hotel.imagePaths, ...newPaths]
+          imageUrls: [...hotel.imageUrls, ...newUrls]
         },
-        select: { imagePaths: true }
+        select: { imageUrls: true }
       });
 
       return NextResponse.json(updatedHotel, { status: 200 });
