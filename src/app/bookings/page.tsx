@@ -16,7 +16,7 @@ export default function BookingsPage() {
         // Check authentication status
         const storedToken = localStorage.getItem("token");
         if (!storedToken) {
-            router.push("/login"); // Redirect to login if no token
+            router.push("users/login"); // Redirect to login if no token
             return;
         }
         setToken(storedToken);
