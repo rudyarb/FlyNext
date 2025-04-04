@@ -12,7 +12,7 @@ interface HotelSummary {
   city: string;
   address: string;
   starRating: number;
-  logo: string | null;
+  logoPath: string | null; // Changed from logo to logoPath
   totalRooms: number;
   activeBookings: number;
 }
@@ -83,6 +83,8 @@ export default function HotelManagePage() {
     );
   }
 
+  const sortedHotels = [...hotels].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <AuthWrapper>
       <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -104,32 +106,42 @@ export default function HotelManagePage() {
 
             {/* Hotels Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {hotels.map((hotel) => (
+              {sortedHotels.map((hotel) => (
                 <Link
                   key={hotel.id}
                   href={`/hotel-manage/${hotel.id}`}
-                  className="block group"
+                  className="block group h-full"
                 >
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden 
                     group-hover:shadow-xl transition-all duration-200 border-2 border-transparent 
-                    group-hover:border-blue-500">
+                    group-hover:border-blue-500 h-full flex flex-col">
                     {/* Hotel Image/Logo */}
-                    <div className="h-48 bg-gray-200 dark:bg-gray-700 relative">
-                      {hotel.logo ? (
+                    <div className="h-48 bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
+                      {hotel.logoPath ? (
                         <img
-                          src={hotel.logo}
-                          alt={hotel.name}
+                          src={`/api/images${hotel.logoPath}`}
+                          alt={`${hotel.name} logo`}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.parentElement!.innerHTML = `
+                              <div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24">
+                                  <path fill="currentColor" d="M19 19V4h-4V3H5v16H3v2h12V6h2v15h4v-2h-2z"/>
+                                </svg>
+                              </div>
+                            `;
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <FaHotel className="text-4xl text-gray-400 dark:text-gray-500" />
+                          <FaHotel className="w-12 h-12 text-gray-400 dark:text-gray-500" />
                         </div>
                       )}
                     </div>
 
                     {/* Hotel Info */}
-                    <div className="p-6">
+                    <div className="p-6 flex-grow flex flex-col">
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                         {hotel.name}
                       </h3>
@@ -137,15 +149,17 @@ export default function HotelManagePage() {
                         {hotel.city}
                       </p>
 
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <FaBed />
-                          <span>{hotel.totalRooms} Rooms</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <FaBookmark />
-                          <span>{hotel.activeBookings} Active</span>
+                      {/* Push stats to bottom */}
+                      <div className="mt-auto">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <FaBed />
+                            <span>{hotel.totalRooms} Rooms</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <FaBookmark />
+                            <span>{hotel.activeBookings} Active</span>
+                          </div>
                         </div>
                       </div>
                     </div>

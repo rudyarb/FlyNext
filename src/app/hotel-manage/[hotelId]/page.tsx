@@ -1,12 +1,15 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaHotel, FaBed, FaImage, FaTrash, FaUpload } from 'react-icons/fa';
+import TabPanel from '@/app/components/TabPanel';
 import ImageReorderModal from '@/app/components/ImageReorderModal';
-import RoomTypeManager from '@/app/components/RoomTypeManager';
+import HotelDetailsPanel from '@/app/components/HotelDetailsPanel';
+import RoomTypesPanel from '@/app/components/RoomTypesPanel';
 import AuthWrapper from '@/app/components/AuthWrapper';
+import { classNames } from '@/utils/styling';
+import Link from 'next/link';
 
 interface HotelDetails {
   id: string;
@@ -32,16 +35,18 @@ interface RoomType {
 export default function HotelManagePage({ params }: { params: Promise<{ hotelId: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState(0);
   const [hotel, setHotel] = useState<HotelDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     address: '',
     city: '',
-    starRating: 1
+    starRating: 1,
+    logo: null as File | null
   });
 
   const fetchHotelDetails = async (hotelId: string) => {
@@ -68,7 +73,8 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
         name: data.name,
         address: data.address,
         city: data.city,
-        starRating: data.starRating
+        starRating: data.starRating,
+        logo: null
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -86,6 +92,7 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setSuccessMessage('');
 
     try {
       const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
@@ -103,7 +110,10 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
       }
 
       setHotel(prev => prev ? { ...prev, ...formData } : null);
-      setEditMode(false);
+      setSuccessMessage('Hotel details updated successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update hotel');
     } finally {
@@ -137,210 +147,160 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const handleLogoUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('logo', file);
 
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-red-500">{error}</div>
-      </div>
-    );
-  }
+    try {
+      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+        method: 'POST',
+        body: formData,
+      });
 
-  if (!hotel) return null;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload logo');
+      }
+
+      setHotel(prev => prev ? { ...prev, logoPath: data.logoPath } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload logo');
+    }
+  };
+
+  const handleImageDelete = async (imagePath: string) => {
+    try {
+      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imagePaths: hotel?.imagePaths.filter(path => path !== imagePath)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete image');
+      }
+
+      setHotel(prev => prev ? {
+        ...prev,
+        imagePaths: prev.imagePaths.filter(path => path !== imagePath)
+      } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete image');
+    }
+  };
+
+  const tabs = [
+    { name: 'Hotel Details', icon: FaHotel },
+    { name: 'Room Types', icon: FaBed }
+  ];
 
   return (
     <AuthWrapper>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-          Hotel Management
-        </h1>
-
-        {/* Hotel Details Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Hotel Details
-            </h2>
-            <button
-              onClick={() => setEditMode(!editMode)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              {editMode ? 'Cancel' : 'Edit Details'}
-            </button>
-          </div>
-
-          {editMode ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="mb-8 flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Hotel Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Hotel Management
+                </h1>
+                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                  Manage your hotel details and room types
+                </p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  City
-                </label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Star Rating
-                </label>
-                <select
-                  value={formData.starRating}
-                  onChange={(e) => setFormData(prev => ({ ...prev, starRating: Number(e.target.value) }))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <option key={rating} value={rating}>
-                      {rating} Star{rating > 1 ? 's' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setEditMode(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">Name:</span> {hotel.name}
-              </p>
-              <p className="text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">Address:</span> {hotel.address}
-              </p>
-              <p className="text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">City:</span> {hotel.city}
-              </p>
-              <p className="text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">Rating:</span> {hotel.starRating} Stars
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Images Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Hotel Images
-            </h2>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setIsImageModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              <Link
+                href="/hotel-manage"
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 
+                  transition-colors shadow-md dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
-                Manage Images
-              </button>
-              <label className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer">
-                Upload Images
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
+                Back to Hotels
+              </Link>
+            </div>
+
+            {/* Tabs */}
+            <div className="mb-8">
+              <div className="border-b border-gray-200 dark:border-gray-700">
+                <nav className="-mb-px flex space-x-8">
+                  {tabs.map((tab, index) => (
+                    <button
+                      key={tab.name}
+                      onClick={() => setActiveTab(index)}
+                      className={classNames(
+                        activeTab === index
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
+                        'group inline-flex items-center py-4 px-1 border-b-2 font-medium'
+                      )}
+                    >
+                      <tab.icon className={classNames(
+                        activeTab === index
+                          ? 'text-blue-500'
+                          : 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400',
+                        'mr-3 h-5 w-5'
+                      )} />
+                      {tab.name}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+              <TabPanel value={activeTab} index={0}>
+                <HotelDetailsPanel 
+                  hotel={hotel}
+                  formData={formData}
+                  setFormData={setFormData}
+                  onSubmit={handleSubmit}
+                  onImageUpload={handleImageUpload}
+                  onImageDelete={handleImageDelete}
+                  onLogoUpload={handleLogoUpload}
+                  isLoading={isLoading}
+                  successMessage={successMessage}
                 />
-              </label>
+              </TabPanel>
+
+              <TabPanel value={activeTab} index={1}>
+                <RoomTypesPanel
+                  hotelId={resolvedParams.hotelId}
+                  roomTypes={hotel?.roomTypes || []}
+                  onUpdate={() => fetchHotelDetails(resolvedParams.hotelId)}
+                />
+              </TabPanel>
             </div>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {hotel.imagePaths.map((path, index) => (
-              <div key={index} className="relative aspect-square">
-                <img
-                  src={path}
-                  alt={`Hotel image ${index + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              </div>
-            ))}
-          </div>
         </div>
-
-        {/* Room Types Section */}
-        <RoomTypeManager hotelId={resolvedParams.hotelId} roomTypes={hotel.roomTypes} />
-
-        {/* Image Reorder Modal */}
-        {isImageModalOpen && (
-          <ImageReorderModal
-            images={hotel.imagePaths}
-            onClose={() => setIsImageModalOpen(false)}
-            onSave={async (newOrder: string[]) => {
-              try {
-                const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ imagePaths: newOrder }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                  throw new Error(data.error || 'Failed to update image order');
-                }
-
-                setHotel(prev => prev ? { ...prev, imagePaths: newOrder } : null);
-                setIsImageModalOpen(false);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to update image order');
-              }
-            }}
-          />
-        )}
       </div>
+
+      {/* Image Reorder Modal */}
+      {isImageModalOpen && (
+        <ImageReorderModal
+          images={hotel?.imagePaths || []}
+          onClose={() => setIsImageModalOpen(false)}
+          onSave={async (newOrder) => {
+            try {
+              const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imagePaths: newOrder }),
+              });
+
+              if (!response.ok) throw new Error('Failed to update image order');
+
+              const data = await response.json();
+              setHotel(prev => prev ? { ...prev, imagePaths: newOrder } : null);
+              setIsImageModalOpen(false);
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Failed to update image order');
+            }
+          }}
+        />
+      )}
     </AuthWrapper>
   );
 }

@@ -6,11 +6,13 @@ import { saveFile } from "@utils/fileUpload";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
+    const { id } = await params;
+    
     // Verify hotel owner
-    const auth = await verifyHotelOwner(request, params.id);
+    const auth = await verifyHotelOwner(request, id);
     if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized access" },
@@ -39,7 +41,7 @@ export async function PUT(
     }
 
     const updatedHotel = await prisma.hotel.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(name && { name }),
         ...(address && { address }),
@@ -61,11 +63,12 @@ export async function PUT(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    // Verify hotel owner
-    const auth = await verifyHotelOwner(request, params.id);
+    const { id } = await params;
+    
+    const auth = await verifyHotelOwner(request, id);
     if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized access" },
@@ -74,51 +77,69 @@ export async function POST(
     }
 
     const formData = await request.formData();
-    const files = formData.getAll('images') as File[];
+    const logo = formData.get('logo') as File | null;
+    const images = formData.getAll('images') as File[];
 
-    if (!files.length) {
-      return NextResponse.json(
-        { error: 'No images provided' },
-        { status: 400 }
-      );
-    }
-
-    // Get current hotel images
-    const hotel = await prisma.hotel.findUnique({
-      where: { id: params.id },
-      select: { imagePaths: true }
-    });
-
-    if (!hotel) {
-      return NextResponse.json(
-        { error: 'Hotel not found' },
-        { status: 404 }
-      );
-    }
-
-    // Save new images
-    const newPaths: string[] = [];
-    for (const file of files) {
-      const result = await saveFile(file, params.id, 'image');
-      if (result.success && result.path) {
-        newPaths.push(result.path);
+    // Handle logo upload
+    if (logo) {
+      const result = await saveFile(logo, id, 'logo');
+      if (!result.success) {
+        return NextResponse.json(
+          { error: 'Failed to upload logo' },
+          { status: 500 }
+        );
       }
+
+      const updatedHotel = await prisma.hotel.update({
+        where: { id },
+        data: { logoPath: result.path },
+        select: { logoPath: true }
+      });
+
+      return NextResponse.json(updatedHotel, { status: 200 });
     }
 
-    // Update hotel with new images
-    const updatedHotel = await prisma.hotel.update({
-      where: { id: params.id },
-      data: {
-        imagePaths: [...hotel.imagePaths, ...newPaths]
-      },
-      select: { imagePaths: true }
-    });
+    // Handle multiple image uploads
+    if (images.length) {
+      const hotel = await prisma.hotel.findUnique({
+        where: { id },
+        select: { imagePaths: true }
+      });
 
-    return NextResponse.json(updatedHotel, { status: 200 });
-  } catch (error) {
-    console.error('Error uploading images:', error);
+      if (!hotel) {
+        return NextResponse.json(
+          { error: 'Hotel not found' },
+          { status: 404 }
+        );
+      }
+
+      const newPaths: string[] = [];
+      for (const file of images) {
+        const result = await saveFile(file, id, 'image');
+        if (result.success && result.path) {
+          newPaths.push(result.path);
+        }
+      }
+
+      const updatedHotel = await prisma.hotel.update({
+        where: { id },
+        data: {
+          imagePaths: [...hotel.imagePaths, ...newPaths]
+        },
+        select: { imagePaths: true }
+      });
+
+      return NextResponse.json(updatedHotel, { status: 200 });
+    }
+
     return NextResponse.json(
-      { error: 'Failed to upload images' },
+      { error: 'No files provided' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Error uploading files:', error);
+    return NextResponse.json(
+      { error: 'Failed to upload files' },
       { status: 500 }
     );
   }
