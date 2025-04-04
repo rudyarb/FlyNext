@@ -282,10 +282,6 @@ export default function FlightSearchPage() {
         )}
 
         <div className="mt-8 text-center">
-          <Link href="/bookings/checkout" className="text-blue-600 dark:text-blue-400 hover:underline">
-            Proceed to Checkout
-          </Link>
-          <br />
           <Link href="/hotel-search" className="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
             Search Hotels
           </Link>
