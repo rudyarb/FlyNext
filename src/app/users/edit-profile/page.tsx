@@ -3,17 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaImage, FaHotel } from "react-icons/fa";
 
 const EditProfile = () => {
   const router = useRouter();
-  const { token, userName, role, updateProfile, login, logout } = useAuth(); // Added login and logout for better handling
+  const { token, userName, role, updateProfile, login } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     password: "",
-    role: "USER",
+    role: "",
   });
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ const EditProfile = () => {
       setFormData((prevData) => ({
         ...prevData,
         firstName: userName,
-        role: role || "USER",
+        role: role || "",
       }));
     }
   }, [userName, role]);
@@ -51,14 +52,25 @@ const EditProfile = () => {
     }
 
     try {
-      const updateData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password, // Include password updates
-        role: formData.role,
-      };
+      const updateData: Record<string, any> = {};
+      if (formData.firstName) updateData.firstName = formData.firstName;
+      if (formData.lastName) updateData.lastName = formData.lastName;
+      if (formData.email) updateData.email = formData.email;
+      if (formData.phone) updateData.phone = formData.phone;
+      if (formData.password) updateData.password = formData.password;
+      if (formData.role) updateData.role = formData.role;
+
+      if (profilePicture) {
+        const formDataObj = new FormData();
+        formDataObj.append("file", profilePicture);
+        formDataObj.append("upload_preset", "your_upload_preset");
+        const uploadRes = await fetch("https://api.cloudinary.com/v1_1/your_cloud_name/image/upload", {
+          method: "POST",
+          body: formDataObj,
+        });
+        const uploadData = await uploadRes.json();
+        updateData.profilePic = uploadData.secure_url;
+      }
 
       const res = await fetch("/api/users/profile", {
         method: "PUT",
@@ -77,16 +89,15 @@ const EditProfile = () => {
       const responseData = await res.json();
       const updatedName = responseData?.firstName || formData.firstName;
       const updatedRole = responseData?.role || formData.role;
-      const newToken = responseData?.token; // Check if the response includes an updated token
+      const newToken = responseData?.token;
 
       if (newToken) {
-        login(newToken, updatedName, updatedRole); // Re-login with new token and updated credentials
+        login(newToken, updatedName, updatedRole);
       } else {
-        updateProfile(updatedName, updatedRole); // Update profile without token change
+        updateProfile(updatedName, updatedRole);
       }
 
       setMessage("Profile updated successfully!");
-      setTimeout(() => router.push("/"), 1500);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "An unexpected error occurred.");
     } finally {
@@ -97,90 +108,202 @@ const EditProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto space-y-8">
-        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white text-center">Edit Profile</h2>
-        {message && (
-          <p
-            className={`text-center ${
-              message.includes("successfully") ? "text-green-500" : "text-red-500"
-            }`}
-          >
-            {message}
-          </p>
-        )}
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
+            Edit Your Profile
+          </h2>
+          {message && (
+            <p
+              className={`mt-2 text-sm ${
+                message.includes("successfully") ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {message}
+            </p>
+          )}
+        </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            placeholder="First Name"
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+          <div className="rounded-md shadow-sm -space-y-px bg-white dark:bg-gray-800 p-6">
+            <div className="space-y-4">
+              {/* First Name */}
+              <div>
+                <label htmlFor="firstName" className="sr-only">First name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="First name"
+                  />
+                </div>
+              </div>
 
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            placeholder="Last Name"
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+              {/* Last Name */}
+              <div>
+                <label htmlFor="lastName" className="sr-only">Last name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
 
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="sr-only">Email</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaEnvelope className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Email"
+                  />
+                </div>
+              </div>
 
-          <input
-            type="text"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="Phone (optional)"
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+              {/* Phone */}
+              <div>
+                <label htmlFor="phone" className="sr-only">Phone</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaPhone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="text"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Phone"
+                  />
+                </div>
+              </div>
 
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="New Password (leave blank to keep current)"
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="sr-only">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="New Password (leave blank to keep current)"
+                  />
+                </div>
+              </div>
 
-          <select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          >
-            <option value="USER">User</option>
-            <option value="ADMIN">Hotel Manager (Admin)</option>
-          </select>
+              {/* Role Selector */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Account Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "" })}
+                    className={`inline-flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium transition-colors duration-200 
+                      ${formData.role === ""
+                        ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-300"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      }`}
+                  >
+                    None
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "USER" })}
+                    className={`inline-flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium transition-colors duration-200 
+                      ${formData.role === "USER"
+                        ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-300"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      }`}
+                  >
+                    <FaUser className="h-4 w-4 mr-2" />
+                    User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: "ADMIN" })}
+                    className={`inline-flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium transition-colors duration-200
+                      ${formData.role === "ADMIN"
+                        ? "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-300"
+                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      }`}
+                  >
+                    <FaHotel className="h-4 w-4 mr-2" />
+                    Hotel Manager
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {formData.role === "ADMIN"
+                    ? "Hotel managers can list and manage properties"
+                    : formData.role === "USER"
+                    ? "Users can book hotels and manage their reservations"
+                    : "No changes to account type"}
+                </p>
+              </div>
 
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Profile Picture (optional)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="w-full px-4 py-2 border rounded-md dark:bg-gray-700 dark:text-white"
-          />
+              {/* Profile Picture */}
+              <div>
+                <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Profile Picture
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaImage className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="profilePicture"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="appearance-none rounded-md relative block w-full pl-10 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            disabled={loading}
-          >
-            {loading ? "Updating..." : "Update Profile"}
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors duration-200"
+              disabled={loading}
+            >
+              {loading ? "Updating..." : "Update Profile"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
