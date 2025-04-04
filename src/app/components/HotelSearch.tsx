@@ -163,7 +163,10 @@ const HotelSearch: React.FC = () => {
       try {
         const response = await fetch(`/api/cities?search=${encodeURIComponent(search)}`);
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) {
+          // throw new Error(data.error || 'Failed to fetch city suggestions');
+          alert(data.message);
+        }
         setCitySuggestions(data.cities);
       } catch (error) {
         console.error('Failed to fetch cities:', error);
