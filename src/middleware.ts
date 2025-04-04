@@ -1,12 +1,25 @@
 import { NextResponse, NextRequest } from "next/server";
 import { verifyToken } from "@utils/auth";  // Adjust path if needed
 
-export async function middleware(req) {
+// Define interfaces for cleaner type declarations
+interface VerifiedUser {
+    id: string;
+    email: string;
+    role: string;
+    [key: string]: any; // For any additional properties
+}
+
+export async function middleware(req: NextRequest): Promise<NextResponse> {
   
   // Verify user with access token
-  const verifiedUser = await verifyToken(req);
+  const result = await verifyToken(req);
   
-  // Additional check in case response is null
+  // Check if result is a NextResponse (error case)
+  if (result instanceof NextResponse) {
+      return result;
+  }
+  
+  const verifiedUser = result as VerifiedUser;
   if (!verifiedUser) {
       return NextResponse.json(
           { error: 'Unauthorized' },
@@ -16,7 +29,7 @@ export async function middleware(req) {
 
   // OpenAI. (2025). ChatGPT (Version 4). Retrieved from https://openai.com/
   // Process and return response
-  const response =  NextResponse.next();
+  const response: NextResponse = NextResponse.next();
   response.headers.set("x-user", JSON.stringify(verifiedUser));
   return response;
 }
