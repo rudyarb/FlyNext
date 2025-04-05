@@ -3,43 +3,64 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('search')?.toLowerCase() || ''; // Convert query to lowercase
+  const query = searchParams.get('search') || '';
 
   try {
     const cities = await prisma.city.findMany({
       where: {
         city: {
-          contains: query // Remove mode attribute
+          contains: query,
+          mode: 'insensitive' // Add case-insensitive search
         }
       },
       select: {
         city: true,
         country: true
       },
-      take: 20 // Increased to allow for sorting
+      orderBy: {
+        city: 'asc' // Add basic alphabetical ordering
+      },
+      take: 10 // Limit to 10 results
     });
 
-    // Sort results by relevance
-    const sortedCities = cities.sort((a, b) => {
-      const aCity = a.city.toLowerCase(); // Convert city to lowercase
-      const bCity = b.city.toLowerCase();
+    // If no results found with exact search, try partial match
+    if (cities.length === 0 && query.length > 0) {
+      const partialMatches = await prisma.city.findMany({
+        where: {
+          OR: [
+            {
+              city: {
+                contains: query,
+                mode: 'insensitive'
+              }
+            },
+            {
+              city: {
+                startsWith: query,
+                mode: 'insensitive'
+              }
+            }
+          ]
+        },
+        select: {
+          city: true,
+          country: true
+        },
+        orderBy: {
+          city: 'asc'
+        },
+        take: 10
+      });
+      
+      return NextResponse.json({ cities: partialMatches });
+    }
 
-      // Exact match gets highest priority
-      if (aCity === query) return -1;
-      if (bCity === query) return 1;
-
-      // Starts with gets second priority
-      const aStartsWith = aCity.startsWith(query);
-      const bStartsWith = bCity.startsWith(query);
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
-
-      // Alphabetical order for remaining results
-      return aCity.localeCompare(bCity);
-    });
-
-    return NextResponse.json({ cities: sortedCities.slice(0, 10) }); // Return top 10 results
+    return NextResponse.json({ cities });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch cities' }, { status: 500 });
+    console.error('Error fetching cities:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch cities' }, 
+      { status: 500 }
+    );
   }
 }

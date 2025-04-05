@@ -21,7 +21,7 @@ interface HotelResponse {
   address: string;
   starRating: number;
   logoUrl: string | null;
-  imageUrls: string[] | null;
+  imageUrls: string[];
   startingPrice: number;
   availableRooms: {
     id: string;
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           availableRooms
         };
       })
-      .filter((hotel): hotel is HotelResponse => hotel !== null)
+      .filter((hotel): hotel is NonNullable<typeof hotel> => hotel !== null)
       .sort((a, b) => a.startingPrice - b.startingPrice);
 
     return NextResponse.json({

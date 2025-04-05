@@ -42,7 +42,7 @@ export default function ImageWithFallback({
       onError={(e) => {
         console.error('Image load error:', {
           src,
-          error: e.currentTarget.error
+          element: e.currentTarget
         });
         setHasError(true);
         setIsLoading(false);
