@@ -19,6 +19,7 @@ const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationDropdownOpen, setNotificationDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileNotificationOpen, setMobileNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ const Navbar: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileNotificationRef = useRef<HTMLDivElement>(null);
 
   // Set token from localStorage on component mount
   useEffect(() => {
@@ -164,12 +166,62 @@ const Navbar: React.FC = () => {
       ) {
         setMobileMenuOpen(false);
       }
+      if (
+        mobileNotificationRef.current &&
+        !mobileNotificationRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest(".mobile-notification-button")
+      ) {
+        setMobileNotificationOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Notification component - reused for both desktop and mobile
+  const NotificationsList = ({ onClose = () => {} }) => (
+    <>
+      <div className="p-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+        <h3 className="font-semibold">Notifications</h3>
+        {notifications.length > 0 && (
+          <button
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            onClick={markAllAsRead}
+          >
+            Mark all as read
+          </button>
+        )}
+      </div>
+
+      <div className="max-h-80 overflow-y-auto">
+        {isLoading ? (
+          <div className="p-4 text-center text-gray-500">Loading...</div>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-3 border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer ${
+                !notification.read ? "bg-blue-50 dark:bg-blue-900/20" : ""
+              }`}
+              onClick={() => {
+                markAsRead(notification.id);
+                onClose();
+              }}
+            >
+              <p className="text-sm">{notification.message}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {new Date(notification.createdAt).toLocaleString()}
+              </p>
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-center text-gray-500">No notifications</div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <nav className="bg-white dark:bg-gray-800 text-gray-800 dark:text-white shadow-md">
@@ -217,40 +269,7 @@ const Navbar: React.FC = () => {
 
               {notificationDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden z-50">
-                  <div className="p-2 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                    <h3 className="font-semibold">Notifications</h3>
-                    {notifications.length > 0 && (
-                      <button
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                        onClick={markAllAsRead}
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto">
-                    {isLoading ? (
-                      <div className="p-4 text-center text-gray-500">Loading...</div>
-                    ) : notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 border-b border-gray-100 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer ${
-                            !notification.read ? "bg-blue-50 dark:bg-blue-900/20" : ""
-                          }`}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <p className="text-sm">{notification.message}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {new Date(notification.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">No notifications</div>
-                    )}
-                  </div>
+                  <NotificationsList onClose={() => setNotificationDropdownOpen(false)} />
                 </div>
               )}
             </div>
@@ -311,6 +330,7 @@ const Navbar: React.FC = () => {
           )}
         </div>
 
+        {/* Mobile Controls */}
         <div className="flex md:hidden items-center space-x-2">
           <DarkModeToggle />
 
@@ -319,20 +339,32 @@ const Navbar: React.FC = () => {
             <FaShoppingCart />
           </Link>
 
+          {/* Mobile Notification Button */}
           {isAuthenticated && (
-            <button
-              className="relative p-2 text-gray-600 dark:text-gray-300"
-              onClick={() => setNotificationDropdownOpen((prev) => !prev)}
-            >
-              <FaBell />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+            <div className="relative" ref={mobileNotificationRef}>
+              <button
+                className="mobile-notification-button relative p-2 text-gray-600 dark:text-gray-300"
+                onClick={() => setMobileNotificationOpen((prev) => !prev)}
+                aria-label="Notifications"
+              >
+                <FaBell />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Mobile Notification Dropdown */}
+              {mobileNotificationOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-700 shadow-md rounded-lg overflow-hidden z-50">
+                  <NotificationsList onClose={() => setMobileNotificationOpen(false)} />
+                </div>
               )}
-            </button>
+            </div>
           )}
 
+          {/* Mobile Menu Button */}
           <button
             className="mobile-menu-button p-2 focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -341,6 +373,91 @@ const Navbar: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div 
+          ref={mobileMenuRef}
+          className="md:hidden bg-white dark:bg-gray-800 shadow-lg rounded-b-lg overflow-hidden"
+        >
+          <div className="p-4 space-y-3">
+            <Link 
+              href="/flight-search" 
+              className="block py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Search Flights
+            </Link>
+            <Link 
+              href="/hotel-search" 
+              className="block py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Search Hotels
+            </Link>
+            <Link 
+              href="/bookings" 
+              className="block py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              My Bookings
+            </Link>
+            
+            {isAuthenticated ? (
+              <>
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <p className="px-4 text-gray-600 dark:text-gray-400">Signed in as <span className="font-medium">{userName}</span></p>
+                  
+                  <Link 
+                    href="/users/edit-profile" 
+                    className="block py-2 px-4 mt-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Edit Profile
+                  </Link>
+                  
+                  {role === "ADMIN" && (
+                    <Link 
+                      href="/hotel-manage" 
+                      className="block py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Manage Hotels
+                    </Link>
+                  )}
+                  
+                  <button 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 mt-2"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-600 space-y-2">
+                <Link 
+                  href="/users/login" 
+                  className="block w-full py-2 px-4 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link 
+                  href="/users/signup" 
+                  className="block w-full py-2 px-4 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
