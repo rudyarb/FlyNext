@@ -3,9 +3,10 @@
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import DatePicker from 'react-datepicker';
-import { FaCalendarAlt, FaImage, FaArrowRight } from 'react-icons/fa';
+import { FaCalendarAlt, FaImage, FaArrowRight, FaHotel } from 'react-icons/fa';
 import debounce from 'lodash/debounce';
 import "react-datepicker/dist/react-datepicker.css";
+import ImageWithFallback from './ImageWithFallback';
 
 interface Hotel {
   id: string;
@@ -13,7 +14,8 @@ interface Hotel {
   city: string;
   address: string;
   starRating: number;
-  logoPath: string | null; // Updated from logo
+  logoUrl: string | null;    // Updated from logoPath
+  imageUrls: string[];       // Updated from imagePaths
   startingPrice: number;
 }
 
@@ -504,26 +506,20 @@ const HotelSearchContent = () => {
       )}
 
       <div className="space-y-6">
-        {hotels.map(hotel => (
-          <div key={hotel.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+        {hotels.map((hotel) => (
+          <div key={hotel.id} className="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <div className="flex flex-col md:flex-row">
-              {/* Image section - Updated styling with fixed dimensions */}
+              {/* Logo/Main Image */}
               <div className="w-full md:w-48 h-48 md:h-48 relative bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                {hotel.logoPath ? (
-                  <img
-                    src={`/api/images${hotel.logoPath}`}
-                    alt={hotel.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                    <FaImage size={32} />
-                  </div>
-                )}
+                <ImageWithFallback
+                  src={hotel.logoUrl}
+                  alt={hotel.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
 
-              {/* Content section */}
-              <div className="flex-1 p-4">
+              {/* Hotel Details */}
+              <div className="p-6 flex-grow">
                 <div className="flex flex-col h-full justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-2">
@@ -555,6 +551,22 @@ const HotelSearchContent = () => {
                 </div>
               </div>
             </div>
+
+            {/* Image Gallery */}
+            {hotel.imageUrls && hotel.imageUrls.length > 0 && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-4 gap-4">
+                  {hotel.imageUrls.slice(0, 4).map((url, index) => (
+                    <ImageWithFallback
+                      key={index}
+                      src={url}
+                      alt={`${hotel.name} - Image ${index + 1}`}
+                      className="w-full h-24 object-cover rounded"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
 

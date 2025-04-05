@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FaHotel, FaBed, FaBookmark } from 'react-icons/fa';
+import { FaHotel, FaBed, FaBookmark, FaStar } from 'react-icons/fa';
 import AuthWrapper from '@/app/components/AuthWrapper';
 
 interface HotelSummary {
@@ -12,7 +12,8 @@ interface HotelSummary {
   city: string;
   address: string;
   starRating: number;
-  logoPath: string | null; // Changed from logo to logoPath
+  logoUrl: string | null;
+  imageUrls: string[]; // Add this field
   totalRooms: number;
   activeBookings: number;
 }
@@ -92,104 +93,64 @@ export default function HotelManagePage() {
     <AuthWrapper>
       <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Hotel Management
-              </h1>
-              <Link
-                href="/hotel-manage/new"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                  transition-colors shadow-md"
-              >
-                Add New Hotel
-              </Link>
-            </div>
+          {/* Header section */}
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Manage Your Hotels
+            </h1>
+            <Link
+              href="/hotel-manage/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Add New Hotel
+            </Link>
+          </div>
 
-            {/* Hotels Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedHotels.map((hotel) => (
-                <Link
-                  key={hotel.id}
-                  href={`/hotel-manage/${hotel.id}`}
-                  className="block group h-full"
-                >
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden 
-                    group-hover:shadow-xl transition-all duration-200 border-2 border-transparent 
-                    group-hover:border-blue-500 h-full flex flex-col">
-                    {/* Hotel Image/Logo */}
-                    <div className="h-48 bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
-                      {hotel.logoPath ? (
-                        <img
-                          src={`/api/images${hotel.logoPath}`}
-                          alt={`${hotel.name} logo`}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.parentElement!.innerHTML = `
-                              <div class="w-full h-full flex items-center justify-center">
-                                <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24">
-                                  <path fill="currentColor" d="M19 19V4h-4V3H5v16H3v2h12V6h2v15h4v-2h-2z"/>
-                                </svg>
-                              </div>
-                            `;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <FaHotel className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hotel Info */}
-                    <div className="p-6 flex-grow flex flex-col">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                        {hotel.name}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-300 mb-4">
-                        {hotel.city}
-                      </p>
-
-                      {/* Push stats to bottom */}
-                      <div className="mt-auto">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <FaBed />
-                            <span>{hotel.totalRooms} Rooms</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                            <FaBookmark />
-                            <span>{hotel.activeBookings} Active</span>
-                          </div>
-                        </div>
+          {/* Hotels grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedHotels.map((hotel) => (
+              <Link key={hotel.id} href={`/hotel-manage/${hotel.id}`}>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                  <div className="h-48 bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
+                    {hotel.logoUrl ? (
+                      <img
+                        src={hotel.logoUrl}
+                        alt={`${hotel.name} logo`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : hotel.imageUrls && hotel.imageUrls.length > 0 ? (
+                      <img
+                        src={hotel.imageUrls[0]}
+                        alt={`${hotel.name}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FaHotel className="w-12 h-12 text-gray-400 dark:text-gray-500" />
                       </div>
+                    )}
+                  </div>
+                  {/* Hotel info */}
+                  <div className="p-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                      {hotel.name}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">
+                      {hotel.city}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <FaStar className="text-yellow-400 mr-1" />
+                        <span>{hotel.starRating}</span>
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {hotel.totalRooms} room types
+                      </span>
                     </div>
                   </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Empty State */}
-            {hotels.length === 0 && (
-              <div className="text-center py-12">
-                <FaHotel className="mx-auto text-5xl text-gray-400 dark:text-gray-600 mb-4" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No Hotels Yet
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Start by adding your first hotel property
-                </p>
-                <Link
-                  href="/hotel-manage/new"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg 
-                    hover:bg-blue-700 transition-colors shadow-md"
-                >
-                  Add New Hotel
-                </Link>
-              </div>
-            )}
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </main>

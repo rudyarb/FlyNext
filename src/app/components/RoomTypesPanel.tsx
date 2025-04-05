@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import RoomTypeForm from './RoomTypeForm';
+import ImageWithFallback from './ImageWithFallback';
 
 interface RoomType {
   id: string;
   type: string;
   amenities: string[];
   pricePerNight: number;
-  images: string[];
+  imageUrls: string[]; // Changed from images
   quantity: number;
   availability: number;
 }
@@ -209,12 +210,12 @@ const RoomTypesPanel: React.FC<RoomTypesPanelProps> = ({
               </div>
             </div>
             
-            {room.images && room.images.length > 0 && (
+            {room.imageUrls && room.imageUrls.length > 0 && (
               <div className="mt-4 grid grid-cols-4 gap-4">
-                {room.images.map((image, index) => (
-                  <img
+                {room.imageUrls.map((url, index) => (
+                  <ImageWithFallback
                     key={index}
-                    src={image}
+                    src={url}
                     alt={`${room.type} image ${index + 1}`}
                     className="w-full h-24 object-cover rounded-md"
                   />

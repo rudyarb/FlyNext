@@ -11,9 +11,9 @@ interface RoomType {
   type: string;
   amenities: string[];
   pricePerNight: number;
+  imageUrls: string[];
+  quantity: number;
   availableRooms: number;
-  totalRooms: number;
-  images: string[];
 }
 
 interface HotelDetails {
@@ -22,8 +22,8 @@ interface HotelDetails {
   address: string;
   city: string;
   starRating: number;
-  logo: string | null;
-  images: string[];
+  logoUrl: string | null;    // Changed from logo
+  imageUrls: string[];       // Changed from images
   roomTypes: RoomType[];
 }
 
@@ -181,8 +181,8 @@ export default function HotelDetailsPage() {
             address={hotelDetails.address}
             city={hotelDetails.city}
             starRating={hotelDetails.starRating}
-            logoPath={hotelDetails.logo}
-            imagePaths={hotelDetails.images}
+            logoUrl={hotelDetails.logoUrl}       // Changed from logoPath
+            imageUrls={hotelDetails.imageUrls}   // Changed from imagePaths
           />
 
           {/* Date Selection Section */}
@@ -240,12 +240,14 @@ export default function HotelDetailsPage() {
                 sortedRoomTypes.map((room) => (
                   <RoomTypeCard 
                     key={room.id} 
-                    {...room} 
+                    {...room}
+                    imageUrls={room.imageUrls || []}
                     hotelId={hotelId}
                     showAvailability={!!(checkIn && checkOut && hasCheckedAvailability)}
                     isAvailable={room.availableRooms > 0}
                     checkIn={checkIn}
                     checkOut={checkOut}
+                    totalRooms={room.quantity}
                   />
                 ))
               ) : (

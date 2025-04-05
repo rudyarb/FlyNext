@@ -3,20 +3,22 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ImageCarousel from './ImageCarousel';
+import ImageWithFallback from './ImageWithFallback';
+import { FaImage } from 'react-icons/fa';
 
 interface RoomTypeCardProps {
-  id: string; // Add this prop
-  hotelId: string; // Add this prop
+  id: string;
+  hotelId: string;
   type: string;
   amenities: string[];
   pricePerNight: number;
   availableRooms: number;
   totalRooms: number;
-  images: string[]; // These are now file paths
+  imageUrls: string[]; // Changed from images to imageUrls for consistency
   showAvailability?: boolean;
   isAvailable?: boolean;
-  checkIn?: string; // Add this prop
-  checkOut?: string; // Add this prop
+  checkIn?: string;
+  checkOut?: string;
 }
 
 export default function RoomTypeCard({
@@ -27,13 +29,34 @@ export default function RoomTypeCard({
   pricePerNight,
   availableRooms,
   totalRooms,
-  images,
+  imageUrls, // Changed from images
   showAvailability = false,
   isAvailable = true,
   checkIn,
   checkOut
 }: RoomTypeCardProps) {
   const router = useRouter();
+
+  // Update the debug logging
+  console.log('RoomTypeCard imageUrls:', {
+    imageUrls,
+    isArray: Array.isArray(imageUrls),
+    length: imageUrls?.length,
+    firstUrl: imageUrls?.[0]
+  });
+
+  // Ensure imageUrls is always an array and contains valid URLs
+  const safeImageUrls = Array.isArray(imageUrls) 
+    ? imageUrls.filter(url => {
+        const isValid = url && typeof url === 'string' && url.trim().length > 0;
+        if (!isValid) {
+          console.log('Invalid image URL found:', url);
+        }
+        return isValid;
+      })
+    : [];
+
+  console.log('Filtered image URLs:', safeImageUrls);
 
   const handleBooking = () => {
     const token = localStorage.getItem('token');
@@ -50,13 +73,20 @@ export default function RoomTypeCard({
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col
       transform transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-500 border-2 border-transparent
       ${!isAvailable && showAvailability ? 'opacity-60' : ''}`}>
+      
       {/* Room Images Carousel */}
       <div className="h-64 flex-shrink-0">
-        <ImageCarousel 
-          images={images.map(path => `/api/images${path}`)} 
-          alt={type} 
-          height="h-64" 
-        />
+        {safeImageUrls.length > 0 ? (
+          <ImageCarousel 
+            images={safeImageUrls}
+            alt={`${type} room images`}
+            height="h-64"
+          />
+        ) : (
+          <div className="h-64 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <FaImage className="w-12 h-12 text-gray-400" />
+          </div>
+        )}
       </div>
 
       {/* Room Info */}

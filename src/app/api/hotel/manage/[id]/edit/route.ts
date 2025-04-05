@@ -68,6 +68,18 @@ export async function POST(
 
     // Handle logo upload
     if (logo) {
+      // First check if hotel exists
+      const hotel = await prisma.hotel.findUnique({
+        where: { id }
+      });
+
+      if (!hotel) {
+        return NextResponse.json(
+          { error: 'Hotel not found' },
+          { status: 404 }
+        );
+      }
+
       const result = await uploadToCloudinary(logo, `logos/${id}`);
       if (!result.success) {
         return NextResponse.json(

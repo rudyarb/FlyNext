@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { FaImage, FaTrash, FaUpload, FaStar } from 'react-icons/fa';
+import ImageWithFallback from './ImageWithFallback';
 
 interface HotelDetailsPanelProps {
   hotel: {
@@ -8,8 +9,8 @@ interface HotelDetailsPanelProps {
     address: string;
     city: string;
     starRating: number;
-    logoPath: string | null;
-    imagePaths: string[];
+    logoUrl: string | null;
+    imageUrls: string[];
   } | null;
   formData: {
     name: string;
@@ -17,6 +18,7 @@ interface HotelDetailsPanelProps {
     city: string;
     starRating: number;
     logo: File | null;
+    logoPreview: string | null;
   };
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
@@ -26,6 +28,19 @@ interface HotelDetailsPanelProps {
   isLoading: boolean;
   successMessage?: string;
 }
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+const validateImage = (file: File): string | null => {
+  if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    return 'Unsupported file type. Please upload a JPEG, PNG, GIF, or WebP image.';
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return 'File size too large. Maximum size is 5MB.';
+  }
+  return null;
+};
 
 const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
   hotel,
@@ -42,13 +57,12 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-        setErrorMessage('Unsupported file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+      const error = validateImage(file);
+      if (error) {
+        setErrorMessage(error);
         return;
       }
       setErrorMessage('');
@@ -58,11 +72,13 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const hasInvalidFile = files.some(file => !SUPPORTED_IMAGE_TYPES.includes(file.type));
     
-    if (hasInvalidFile) {
-      setErrorMessage('Unsupported file type. Please upload JPEG, PNG, GIF, or WebP images only.');
-      return;
+    for (const file of files) {
+      const error = validateImage(file);
+      if (error) {
+        setErrorMessage(`${file.name}: ${error}`);
+        return;
+      }
     }
     
     setErrorMessage('');
@@ -94,30 +110,14 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
           <div className="flex items-start space-x-6">
             <div className="flex-shrink-0">
               <div className="relative group">
-                {hotel?.logoPath ? (
-                  <div className="relative group">
-                    <img
-                      src={`/api/images${hotel.logoPath}`}
-                      alt="Hotel logo"
-                      className="w-32 h-32 object-cover rounded-lg shadow-md"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                      <label className="cursor-pointer">
-                        <FaUpload className="h-8 w-8 text-white" />
-                        <input
-                          ref={logoInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 transition-colors">
-                    <FaUpload className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Upload Logo</span>
+                <ImageWithFallback
+                  src={formData.logoPreview || hotel?.logoUrl || null}
+                  alt="Hotel logo"
+                  className="w-32 h-32 object-cover rounded-lg shadow-md"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                  <label className="cursor-pointer">
+                    <FaUpload className="h-8 w-8 text-white" />
                     <input
                       ref={logoInputRef}
                       type="file"
@@ -126,7 +126,7 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
                       className="hidden"
                     />
                   </label>
-                )}
+                </div>
               </div>
             </div>
 
@@ -223,18 +223,19 @@ const HotelDetailsPanel: React.FC<HotelDetailsPanelProps> = ({
             />
           </div>
 
+          {/* Images Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {hotel?.imagePaths.map((path, index) => (
+            {hotel?.imageUrls?.map((url, index) => (
               <div key={index} className="relative group aspect-square">
-                <img
-                  src={`/api/images${path}`}
+                <ImageWithFallback
+                  src={url}
                   alt={`Hotel image ${index + 1}`}
                   className="w-full h-full object-cover rounded-lg"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <button
                     type="button"
-                    onClick={() => onImageDelete(path)}
+                    onClick={() => onImageDelete(url)}
                     className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                   >
                     <FaTrash className="w-5 h-5" />

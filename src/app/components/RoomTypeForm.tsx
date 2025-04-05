@@ -8,7 +8,7 @@ interface RoomTypeFormProps {
     pricePerNight: number;
     quantity: number;
     amenities: string[];
-    images: string[];
+    imageUrls: string[]; // Changed from images to imageUrls
   };
   onSubmit: (formData: FormData) => Promise<void>;
   onCancel: () => void;
@@ -53,7 +53,7 @@ export default function RoomTypeForm({
     }
 
     // Validate images
-    if (!isEditing && selectedFiles.length === 0 && (!initialData?.images || initialData.images.length === 0)) {
+    if (!isEditing && selectedFiles.length === 0 && (!initialData?.imageUrls || initialData.imageUrls.length === 0)) {
       newErrors.images = 'At least one image is required';
     }
 
@@ -74,8 +74,8 @@ export default function RoomTypeForm({
     formData.set('amenities', JSON.stringify(amenities));
     
     // Add existing images if editing
-    if (isEditing && initialData?.images) {
-      formData.set('existingImages', JSON.stringify(initialData.images));
+    if (isEditing && initialData?.imageUrls) {
+      formData.set('existingImages', JSON.stringify(initialData.imageUrls));
     }
 
     // Add selected files
@@ -252,12 +252,12 @@ export default function RoomTypeForm({
         )}
       </div>
 
-      {isEditing && initialData?.images && initialData.images.length > 0 && (
+      {isEditing && initialData?.imageUrls && initialData.imageUrls.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
-          {initialData.images.map((image, index) => (
+          {initialData.imageUrls.map((url, index) => (
             <div key={index} className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
               <img
-                src={image}
+                src={url}
                 alt={`Room image ${index + 1}`}
                 className="w-full h-24 object-cover"
               />

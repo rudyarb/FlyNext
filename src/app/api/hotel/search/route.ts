@@ -21,6 +21,7 @@ interface HotelResponse {
   address: string;
   starRating: number;
   logoUrl: string | null;
+  imageUrls: string[] | null;
   startingPrice: number;
   availableRooms: {
     id: string;
@@ -32,8 +33,8 @@ interface HotelResponse {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const { searchParams } = new URL(request.url);
-    
+    const searchParams = request.nextUrl.searchParams;
+
     const checkIn = searchParams.get('checkIn');
     const checkOut = searchParams.get('checkOut');
     const city = searchParams.get('city');
@@ -102,12 +103,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         address: true,
         starRating: true,
         logoUrl: true,
+        imageUrls: true,
         roomTypes: {
           select: {
             id: true,
             type: true,
             pricePerNight: true,
             amenities: true,
+            availability: true,
             hotelBookings: {
               where: {
                 OR: [
@@ -158,6 +161,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           address: hotel.address,
           starRating: hotel.starRating,
           logoUrl: hotel.logoUrl,
+          imageUrls: hotel.imageUrls,
           startingPrice,
           availableRooms
         };
@@ -176,10 +180,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
   } catch (error) {
-    console.error('Search error:', error instanceof Error ? error.message : error);
+    console.error('Error searching hotels:', error instanceof Error ? error.message : error);
     return NextResponse.json(
-      { error: 'Failed to fetch hotels' },
-      { status: 400 }
+      { error: 'Failed to search hotels' },
+      { status: 500 }
     );
   }
 }

@@ -59,18 +59,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (logoFile) {
       const result = await uploadToCloudinary(logoFile, 'logos');
       if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
+        console.error('Logo upload failed:', result.error);
+        return NextResponse.json({ 
+          error: 'Failed to upload logo image' 
+        }, { status: 400 });
       }
       logoUrl = result.url;
     }
 
     // Upload hotel images
     const imageUrls: string[] = [];
+    let uploadError = false;
+
     for (const file of imageFiles) {
       const result = await uploadToCloudinary(file, 'hotel-images');
       if (result.success && result.url) {
         imageUrls.push(result.url);
+      } else {
+        uploadError = true;
+        console.error('Image upload failed:', result.error);
       }
+    }
+
+    if (uploadError || imageUrls.length === 0) {
+      return NextResponse.json({ 
+        error: 'Failed to upload one or more images' 
+      }, { status: 400 });
     }
 
     // Create hotel with Cloudinary URLs
