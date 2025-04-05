@@ -19,8 +19,8 @@ interface HotelDetails {
   address: string;
   city: string;
   starRating: number;
-  logoPath: string | null;
-  imagePaths: string[];
+  logoUrl: string | null; // Changed from logoPath
+  imageUrls: string[]; // Changed from imagePaths
   roomTypes: RoomType[];
 }
 
@@ -29,9 +29,20 @@ interface RoomType {
   type: string;
   amenities: string[];
   pricePerNight: number;
-  images: string[];
+  imageUrls: string[];
   quantity: number;
   availability: number;
+}
+
+interface FormData {
+  name: string;
+  address: string;
+  city: string;
+  starRating: number;
+  logo: File | null;
+  logoPreview: string | null;
+  pendingImages: File[];  // Add this line
+  pendingImagePreviews: string[];  // Add this line
 }
 
 export default function HotelManagePage({ params }: { params: Promise<{ hotelId: string }> }) {
@@ -43,12 +54,15 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
   const [error, setError] = useState('');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     address: '',
     city: '',
     starRating: 1,
-    logo: null as File | null
+    logo: null,
+    logoPreview: null,
+    pendingImages: [],
+    pendingImagePreviews: []
   });
   const [token, setToken] = useState<string | null>(null);
 
@@ -82,7 +96,10 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
         address: data.address,
         city: data.city,
         starRating: data.starRating,
-        logo: null
+        logo: null,
+        logoPreview: null,
+        pendingImages: [],
+        pendingImagePreviews: []
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -97,30 +114,77 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     }
   }, [resolvedParams.hotelId, token]);
 
+  useEffect(() => {
+    return () => {
+      if (formData.logoPreview) {
+        URL.revokeObjectURL(formData.logoPreview);
+      }
+      formData.pendingImagePreviews.forEach(URL.revokeObjectURL);
+    };
+  }, [formData.logoPreview, formData.pendingImagePreviews]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // First update basic hotel details
+      if (formData.name || formData.address || formData.city || formData.starRating) {
+        const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            address: formData.address,
+            city: formData.city,
+            starRating: formData.starRating,
+          }),
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update hotel');
+        if (!response.ok) {
+          throw new Error('Failed to update hotel details');
+        }
       }
 
-      setHotel(prev => prev ? { ...prev, ...formData } : null);
-      setSuccessMessage('Hotel details updated successfully!');
+      // Then handle file uploads if any
+      if (formData.logo || formData.pendingImages.length > 0) {
+        const fileFormData = new FormData();
+        
+        if (formData.logo) {
+          fileFormData.append('logo', formData.logo);
+        }
+        
+        formData.pendingImages.forEach(file => {
+          fileFormData.append('images', file);
+        });
+
+        const uploadResponse = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
+          method: 'POST',
+          body: fileFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload images');
+        }
+      }
+
+      // Refresh hotel data
+      await fetchHotelDetails(resolvedParams.hotelId);
       
-      // Clear success message after 3 seconds
+      // Clear pending uploads
+      formData.pendingImagePreviews.forEach(URL.revokeObjectURL);
+      setFormData(prev => ({
+        ...prev,
+        logo: null,
+        logoPreview: null,
+        pendingImages: [],
+        pendingImagePreviews: []
+      }));
+
+      setSuccessMessage('Hotel details updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update hotel');
@@ -129,52 +193,26 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
 
-    const formData = new FormData();
-    Array.from(e.target.files).forEach(file => {
-      formData.append('images', file);
-    });
+    const newImages = Array.from(e.target.files);
+    const newPreviews = newImages.map(file => URL.createObjectURL(file));
 
-    try {
-      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload images');
-      }
-
-      setHotel(prev => prev ? { ...prev, imagePaths: data.imagePaths } : null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload images');
-    }
+    setFormData(prev => ({
+      ...prev,
+      pendingImages: [...prev.pendingImages, ...newImages],
+      pendingImagePreviews: [...prev.pendingImagePreviews, ...newPreviews]
+    }));
   };
 
-  const handleLogoUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('logo', file);
-
-    try {
-      const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload logo');
-      }
-
-      setHotel(prev => prev ? { ...prev, logoPath: data.logoPath } : null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload logo');
-    }
+  const handleLogoUpload = (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setFormData(prev => ({
+      ...prev,
+      logo: file,
+      logoPreview: previewUrl
+    }));
   };
 
   const handleImageDelete = async (imagePath: string) => {
@@ -183,7 +221,7 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          imagePaths: hotel?.imagePaths.filter(path => path !== imagePath)
+          imageUrls: hotel?.imageUrls.filter(path => path !== imagePath)
         }),
       });
 
@@ -193,7 +231,7 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
 
       setHotel(prev => prev ? {
         ...prev,
-        imagePaths: prev.imagePaths.filter(path => path !== imagePath)
+        imageUrls: prev.imageUrls.filter(path => path !== imagePath)
       } : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete image');
@@ -298,20 +336,20 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
       {/* Image Reorder Modal */}
       {isImageModalOpen && (
         <ImageReorderModal
-          images={hotel?.imagePaths || []}
+          images={hotel?.imageUrls || []}
           onClose={() => setIsImageModalOpen(false)}
           onSave={async (newOrder) => {
             try {
               const response = await fetch(`/api/hotel/manage/${resolvedParams.hotelId}/edit`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imagePaths: newOrder }),
+                body: JSON.stringify({ imageUrls: newOrder }),
               });
 
               if (!response.ok) throw new Error('Failed to update image order');
 
               const data = await response.json();
-              setHotel(prev => prev ? { ...prev, imagePaths: newOrder } : null);
+              setHotel(prev => prev ? { ...prev, imageUrls: newOrder } : null);
               setIsImageModalOpen(false);
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Failed to update image order');

@@ -1,49 +1,49 @@
 'use client';
 
+import ImageWithFallback from './ImageWithFallback';
 import ImageCarousel from './ImageCarousel';
+import { FaImage } from 'react-icons/fa';
 
 export interface HotelDetailsProps {
   name: string;
   address: string;
   city: string;
   starRating: number;
-  logoPath: string | null;
-  imagePaths: string[];
+  logoUrl: string | null;    // Changed from logoPath
+  imageUrls: string[];       // Changed from imagePaths
 }
 
-export default function HotelDetails({ 
-  name, 
-  address, 
-  city, 
-  starRating, 
-  logoPath,
-  imagePaths = [] // Add default empty array
+export default function HotelDetails({
+  name,
+  address,
+  city,
+  starRating,
+  logoUrl,
+  imageUrls
 }: HotelDetailsProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       {/* Image Carousel */}
-      {imagePaths && imagePaths.length > 0 ? (
+      {imageUrls && imageUrls.length > 0 ? (
         <ImageCarousel 
-          images={imagePaths.map(path => `/api/images${path}`)} 
+          images={imageUrls}
           alt={name} 
           height="h-96" 
         />
       ) : (
         <div className="h-96 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-          <p className="text-gray-500 dark:text-gray-400">No images available</p>
+          <FaImage className="w-12 h-12 text-gray-400" />
         </div>
       )}
 
       {/* Hotel Info */}
       <div className="p-6">
         <div className="flex items-center gap-4">
-          {logoPath && (
-            <img
-              src={`/api/images${logoPath}`}
-              alt={name}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          )}
+          <ImageWithFallback
+            src={logoUrl}
+            alt={`${name} logo`}
+            className="w-16 h-16 rounded-full object-cover"
+          />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {name}

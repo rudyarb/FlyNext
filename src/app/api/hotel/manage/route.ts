@@ -35,21 +35,18 @@ export async function GET(request: NextRequest) {
             where: {
                 ownerId: hotelOwner.id
             },
-            include: {
-                roomTypes: true,
-                hotelBookings: {
-                    where: {
-                        status: "CONFIRMED"
-                    }
-                },
+            select: {
+                id: true,
+                name: true,
+                city: true,
+                address: true,
+                starRating: true,
+                logoUrl: true,
+                imageUrls: true,
                 _count: {
                     select: {
                         roomTypes: true,
-                        hotelBookings: {
-                            where: {
-                                status: "CONFIRMED"
-                            }
-                        }
+                        hotelBookings: true
                     }
                 }
             }
@@ -61,7 +58,8 @@ export async function GET(request: NextRequest) {
             city: hotel.city,
             address: hotel.address,
             starRating: hotel.starRating,
-            logoUrl: hotel.logoUrl,  // Changed from logoPath
+            logoUrl: hotel.logoUrl,
+            imageUrls: hotel.imageUrls,
             totalRooms: hotel._count.roomTypes,
             activeBookings: hotel._count.hotelBookings
         }));

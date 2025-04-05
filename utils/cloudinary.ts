@@ -1,83 +1,87 @@
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_URL?.split('@')[1],
-  api_key: process.env.CLOUDINARY_URL?.split('//')[1].split(':')[0],
-  api_secret: process.env.CLOUDINARY_URL?.split(':')[1].split('@')[0],
-});
-
-// Base optimization options
-const baseOptions = {
-  resource_type: 'auto',
-  fetch_format: 'auto',
-  quality: 'auto',
-  flags: 'progressive',
-};
-
-// Specific optimization configurations
-const transformationOptions: Record<string, any> = {
-  'logos': {
-    ...baseOptions,
-    format: 'png',
-    quality: 90,
-    width: 300,
-    crop: 'fit'
-  },
-  'hotel-images': {
-    ...baseOptions,
-    width: 1200,
-    height: 800,
-    crop: 'fill',
-    gravity: 'auto'
-  },
-  'rooms': {
-    ...baseOptions,
-    width: 1000,
-    height: 667,
-    crop: 'fill',
-    gravity: 'auto'
+// Parse Cloudinary URL correctly
+const parseCloudinaryUrl = (url: string) => {
+  try {
+    const match = url.match(/cloudinary:\/\/(\d+):([^@]+)@(.+)/);
+    if (!match) throw new Error('Invalid Cloudinary URL format');
+    return {
+      api_key: match[1],
+      api_secret: match[2],
+      cloud_name: match[3]
+    };
+  } catch (error) {
+    console.error('Failed to parse Cloudinary URL:', error);
+    throw error;
   }
 };
+
+// Configure Cloudinary with parsed credentials
+const credentials = parseCloudinaryUrl(process.env.CLOUDINARY_URL || '');
+
+cloudinary.config({
+  cloud_name: credentials.cloud_name,
+  api_key: credentials.api_key,
+  api_secret: credentials.api_secret,
+  secure: true
+});
 
 export async function uploadToCloudinary(
   file: File,
   folder: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    // Convert File to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Determine which optimization to use based on folder path
-    const folderType = folder.split('/')[0]; // Get 'logos', 'hotel-images', or 'rooms'
-    const options = {
-      ...transformationOptions[folderType] || baseOptions,
-      folder: `hotels/${folder}`
-    };
-
-    // Upload to Cloudinary with optimizations
-    const result = await new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        options,
+        {
+          folder: `hotels/${folder}`,
+          resource_type: 'auto',
+          // Add specific options based on folder type
+          ...(folder === 'logos' && {
+            transformation: [
+              { width: 300, crop: 'fit' },
+              { quality: 'auto', fetch_format: 'auto' }
+            ]
+          }),
+          ...(folder === 'hotel-images' && {
+            transformation: [
+              { width: 1200, height: 800, crop: 'fill', gravity: 'auto' },
+              { quality: 'auto', fetch_format: 'auto' }
+            ]
+          }),
+          ...(folder === 'rooms' && {
+            transformation: [
+              { width: 1000, height: 667, crop: 'fill', gravity: 'auto' },
+              { quality: 'auto', fetch_format: 'auto' }
+            ]
+          })
+        },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            resolve({ success: false, error: error.message });
+          } else {
+            resolve({ 
+              success: true, 
+              url: result?.secure_url 
+            });
+          }
         }
       );
 
       uploadStream.end(buffer);
     });
-
-    return {
-      success: true,
-      url: (result as any).secure_url
-    };
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    console.error('Upload processing error:', error);
     return {
       success: false,
-      error: 'Failed to upload image'
+      error: 'Failed to process upload'
     };
   }
 }
+
+// Export configured cloudinary instance for direct use if needed
+export { cloudinary };

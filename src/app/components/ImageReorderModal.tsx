@@ -8,6 +8,10 @@ interface ImageReorderModalProps {
   onSave: (newOrder: string[]) => void;
 }
 
+function ImageWithFallback({ src, alt, className }: { src: string; alt: string; className: string }) {
+  return <img src={src} alt={alt} className={className} />;
+}
+
 export default function ImageReorderModal({ images, onClose, onSave }: ImageReorderModalProps) {
   const [orderedImages, setOrderedImages] = useState(images);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -36,7 +40,7 @@ export default function ImageReorderModal({ images, onClose, onSave }: ImageReor
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
             Manage Images
@@ -52,19 +56,18 @@ export default function ImageReorderModal({ images, onClose, onSave }: ImageReor
         </div>
 
         <div className="space-y-4">
-          {orderedImages.map((image, index) => (
+          {orderedImages.map((url, index) => (
             <div
-              key={image}
+              key={url}
               draggable
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
-              className={`flex items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg cursor-move ${
-                draggedIndex === index ? 'opacity-50' : ''
-              }`}
+              className={`flex items-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg cursor-move 
+                ${draggedIndex === index ? 'opacity-50' : ''}`}
             >
-              <img
-                src={image}
-                alt={`Hotel image ${index + 1}`}
+              <ImageWithFallback
+                src={url}
+                alt={`Image ${index + 1}`}
                 className="w-24 h-24 object-cover rounded"
               />
               <div className="ml-4 flex-grow">
