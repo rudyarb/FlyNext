@@ -17,9 +17,6 @@ WORKDIR /app
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package*.json ./
-COPY startup.sh ./
-
-RUN sh startup.sh
 
 EXPOSE 3000
 ENV NODE_ENV=production

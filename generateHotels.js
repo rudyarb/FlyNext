@@ -1,149 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
-import fetch from 'node-fetch';
-import { v2 as cloudinary } from 'cloudinary';
-import * as dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 const prisma = new PrismaClient();
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_URL?.split('@')[1],
-  api_key: process.env.CLOUDINARY_URL?.split('//')[1].split(':')[0],
-  api_secret: process.env.CLOUDINARY_URL?.split(':')[1].split('@')[0],
-});
-
-async function uploadToCloudinary(url, folder) {
-  try {
-    // Basic optimization parameters
-    const baseOptions = {
-      folder: `hotels/${folder}`,
-      resource_type: 'auto',
-      fetch_format: 'auto', // Automatically choose best format (webp/avif)
-      quality: 'auto', // Automatic quality optimization
-      flags: 'progressive', // Progressive loading
-    };
-
-    // Specific optimization based on folder type
-    const transformationOptions = {
-      'logos': {
-        ...baseOptions,
-        format: 'png',
-        quality: 90, // Higher quality for logos
-        width: 300, // Standard logo width
-        crop: 'fit'
-      },
-      'hotel-images': {
-        ...baseOptions,
-        width: 1200, // Max width for hotel images
-        height: 800, // Max height for hotel images
-        crop: 'fill',
-        gravity: 'auto', // Intelligent content-aware cropping
-      },
-      'rooms': {
-        ...baseOptions,
-        width: 1000, // Max width for room images
-        height: 667, // Max height maintaining 3:2 ratio
-        crop: 'fill',
-        gravity: 'auto'
-      }
-    };
-
-    // Determine which optimization to use based on folder path
-    const folderType = folder.split('/')[1]; // Get 'logos', 'hotel-images', or 'rooms'
-    const options = transformationOptions[folderType] || baseOptions;
-
-    const result = await cloudinary.uploader.upload(url, options);
-    return result.secure_url;
-  } catch (error) {
-    console.error(`Failed to upload image from ${url}:`, error);
-    return null;
-  }
-}
-
-const hotelBrands = [
-  'Marriott',
-  'Hilton',
-  'Hyatt',
-  'Sheraton',
-  'Westin',
-  'Four Seasons',
-  'Ritz-Carlton',
-  'InterContinental',
-  'W Hotels',
-  'St. Regis'
-];
-
-const hotelTypes = [
-  'Hotel & Resort',
-  'Grand Hotel',
-  'Luxury Collection',
-  'Executive Hotel',
-  'Resort & Spa',
-  'Boutique Hotel',
-  'Plaza Hotel',
-  'City Center'
-];
-
-const hotelImages = [
-  'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg',
-  'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg',
-  'https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg',
-  'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg',
-  'https://images.pexels.com/photos/2869215/pexels-photo-2869215.jpeg',
-  'https://images.pexels.com/photos/2598638/pexels-photo-2598638.jpeg',
-  'https://images.pexels.com/photos/1838554/pexels-photo-1838554.jpeg',
-  'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg',
-  'https://images.pexels.com/photos/260922/pexels-photo-260922.jpeg',
-  'https://images.pexels.com/photos/261388/pexels-photo-261388.jpeg',
-  'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg',
-  'https://images.pexels.com/photos/2506990/pexels-photo-2506990.jpeg',
-  'https://images.pexels.com/photos/2096983/pexels-photo-2096983.jpeg',
-  'https://images.pexels.com/photos/2417278/pexels-photo-2417278.jpeg',
-  'https://images.pexels.com/photos/2844474/pexels-photo-2844474.jpeg',
-  'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg',
-  'https://images.pexels.com/photos/2360569/pexels-photo-2360569.jpeg',
-  'https://images.pexels.com/photos/4825701/pexels-photo-4825701.jpeg',
-  'https://images.pexels.com/photos/5379219/pexels-photo-5379219.jpeg'
-];
-
-const roomImages = [
-  'https://images.pexels.com/photos/271619/pexels-photo-271619.jpeg',
-  'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg',
-  'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
-  'https://images.pexels.com/photos/262048/pexels-photo-262048.jpeg',
-  'https://images.pexels.com/photos/279746/pexels-photo-279746.jpeg',
-  'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg',
-  'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg',
-  'https://images.pexels.com/photos/237371/pexels-photo-237371.jpeg',
-  'https://images.pexels.com/photos/1743231/pexels-photo-1743231.jpeg',
-  'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg',
-  'https://images.pexels.com/photos/3659683/pexels-photo-3659683.jpeg',
-  'https://images.pexels.com/photos/3144580/pexels-photo-3144580.jpeg',
-  'https://images.pexels.com/photos/3754595/pexels-photo-3754595.jpeg',
-  'https://images.pexels.com/photos/3770866/pexels-photo-3770866.jpeg',
-  'https://images.pexels.com/photos/6585757/pexels-photo-6585757.jpeg',
-  'https://images.pexels.com/photos/6186815/pexels-photo-6186815.jpeg',
-  'https://images.pexels.com/photos/6186830/pexels-photo-6186830.jpeg',
-  'https://images.pexels.com/photos/6587907/pexels-photo-6587907.jpeg',
-  'https://images.pexels.com/photos/7746549/pexels-photo-7746549.jpeg'
-];
-
-const hotelLogos = {
-  'Marriott': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Marriott_International_logo.svg/2560px-Marriott_International_logo.svg.png',
-  'Hilton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Hilton_Hotels_%26_Resorts_logo.svg/2560px-Hilton_Hotels_%26_Resorts_logo.svg.png',
-  'Hyatt': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Hyatt_logo.svg/2560px-Hyatt_logo.svg.png',
-  'Sheraton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Sheraton_logo.svg/2560px-Sheraton_logo.svg.png',
-  'Westin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Westin_Hotels_%26_Resorts_logo.svg/2560px-Westin_Hotels_%26_Resorts_logo.svg.png',
-  'Four Seasons': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Four_Seasons_Hotels_and_Resorts_logo.svg/2560px-Four_Seasons_Hotels_and_Resorts_logo.svg.png',
-  'Ritz-Carlton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Ritz_Carlton_Logo.svg/2560px-Ritz_Carlton_Logo.svg.png',
-  'InterContinental': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/InterContinental_Hotels_Group_logo.svg/2560px-InterContinental_Hotels_Group_logo.svg.png',
-  'W Hotels': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/W_Hotels_logo.svg/2560px-W_Hotels_logo.svg.png',
-  'St. Regis': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/St._Regis_Hotels_%26_Resorts_logo.svg/2560px-St._Regis_Hotels_%26_Resorts_logo.svg.png'
-};
 
 async function main() {
   // Fetch all cities from the database
@@ -161,7 +19,7 @@ async function main() {
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
         email: faker.internet.email(),
-        password: "a",
+        password: "$2b$10$CXH8CFr.Ywf1KZgbyQCmfOOiF4eMNTtbsWsT4DNAvSNxJuyrQTDEK",
         role: "ADMIN",
       },
     });
@@ -174,6 +32,87 @@ async function main() {
     hotelOwners.push(hotelOwner);
   }
 
+  const hotelBrands = [
+    'Marriott',
+    'Hilton',
+    'Hyatt',
+    'Sheraton',
+    'Westin',
+    'Four Seasons',
+    'Ritz-Carlton',
+    'InterContinental',
+    'W Hotels',
+    'St. Regis'
+  ];
+
+  const hotelTypes = [
+    'Hotel & Resort',
+    'Grand Hotel',
+    'Luxury Collection',
+    'Executive Hotel',
+    'Resort & Spa',
+    'Boutique Hotel',
+    'Plaza Hotel',
+    'City Center'
+  ];
+
+  const hotelImages = [
+    'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg',
+    'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg',
+    'https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg',
+    'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg',
+    'https://images.pexels.com/photos/2869215/pexels-photo-2869215.jpeg',
+    'https://images.pexels.com/photos/2598638/pexels-photo-2598638.jpeg',
+    'https://images.pexels.com/photos/1838554/pexels-photo-1838554.jpeg',
+    'https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg',
+    'https://images.pexels.com/photos/260922/pexels-photo-260922.jpeg',
+    'https://images.pexels.com/photos/261388/pexels-photo-261388.jpeg',
+    'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg',
+    'https://images.pexels.com/photos/2506990/pexels-photo-2506990.jpeg',
+    'https://images.pexels.com/photos/2096983/pexels-photo-2096983.jpeg',
+    'https://images.pexels.com/photos/2417278/pexels-photo-2417278.jpeg',
+    'https://images.pexels.com/photos/2844474/pexels-photo-2844474.jpeg',
+    'https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg',
+    'https://images.pexels.com/photos/2360569/pexels-photo-2360569.jpeg',
+    'https://images.pexels.com/photos/4825701/pexels-photo-4825701.jpeg',
+    'https://images.pexels.com/photos/5379219/pexels-photo-5379219.jpeg'
+  ];
+
+  const roomImages = [
+    'https://images.pexels.com/photos/271619/pexels-photo-271619.jpeg',
+    'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg',
+    'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg',
+    'https://images.pexels.com/photos/262048/pexels-photo-262048.jpeg',
+    'https://images.pexels.com/photos/279746/pexels-photo-279746.jpeg',
+    'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg',
+    'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg',
+    'https://images.pexels.com/photos/237371/pexels-photo-237371.jpeg',
+    'https://images.pexels.com/photos/1743231/pexels-photo-1743231.jpeg',
+    'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg',
+    'https://images.pexels.com/photos/3659683/pexels-photo-3659683.jpeg',
+    'https://images.pexels.com/photos/3144580/pexels-photo-3144580.jpeg',
+    'https://images.pexels.com/photos/3754595/pexels-photo-3754595.jpeg',
+    'https://images.pexels.com/photos/3770866/pexels-photo-3770866.jpeg',
+    'https://images.pexels.com/photos/6585757/pexels-photo-6585757.jpeg',
+    'https://images.pexels.com/photos/6186815/pexels-photo-6186815.jpeg',
+    'https://images.pexels.com/photos/6186830/pexels-photo-6186830.jpeg',
+    'https://images.pexels.com/photos/6587907/pexels-photo-6587907.jpeg',
+    'https://images.pexels.com/photos/7746549/pexels-photo-7746549.jpeg'
+  ];
+
+  const hotelLogos = {
+    'Marriott': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Marriott_International.svg/2880px-Marriott_International.svg.png',
+    'Hilton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Hilton_Worldwide_logo.svg/2880px-Hilton_Worldwide_logo.svg.png',
+    'Hyatt': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Hyatt_Logo.svg/2880px-Hyatt_Logo.svg.png',
+    'Sheraton': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Sheraton_%281%29.svg/2880px-Sheraton_%281%29.svg.png',
+    'Westin': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Westin_Hotels_%26_Resorts_logo.svg/2880px-Westin_Hotels_%26_Resorts_logo.svg.png',
+    'Four Seasons': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a1/Four_Seasons_logo.svg/2880px-Four_Seasons_logo.svg.png',
+    'Ritz-Carlton': 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a0/RitzCarlton.svg/1920px-RitzCarlton.svg.png',
+    'InterContinental': 'https://upload.wikimedia.org/wikipedia/en/thumb/5/51/InterContinentalLogo.svg/2880px-InterContinentalLogo.svg.png',
+    'W Hotels': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/W_Hotels_Logo.svg/1920px-W_Hotels_Logo.svg.png',
+    'St. Regis': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/St._Regis_Hotels_%26_Resorts_logo.svg/2880px-St._Regis_Hotels_%26_Resorts_logo.svg.png'
+  };
+
   // Calculate total number of hotels to be created
   const totalHotels = cities.length * 2;
   let currentOwnerIndex = 0;
@@ -182,47 +121,27 @@ async function main() {
   for (const city of cities) {
     for (let i = 0; i < 2; i++) {
       const hotelOwner = hotelOwners[currentOwnerIndex];
-      const hotelBrand = faker.helpers.arrayElement(hotelBrands);
       
-      // Create hotel first with minimal data
-      const hotel = await prisma.hotel.create({
-        data: {
-          name: `${hotelBrand} ${city.city} ${faker.helpers.arrayElement(hotelTypes)}`,
-          logoPath: null,
-          address: `${faker.location.streetAddress()} ${faker.location.street()}`,
-          city: city.city,
-          starRating: faker.number.int({ min: 3, max: 5 }),
-          imagePaths: [],
-          ownerId: hotelOwner.id,
-        },
-      });
-
-      // Upload logo to Cloudinary
-      const logoUrl = hotelLogos[hotelBrand];
-      const cloudinaryLogoUrl = await uploadToCloudinary(logoUrl, `${hotel.id}/logos`);
-
-      // Upload hotel images to Cloudinary
+      // Create hotel with URLs directly
+      const hotelBrand = faker.helpers.arrayElement(hotelBrands);
       const selectedHotelImages = faker.helpers.multiple(
         () => faker.helpers.arrayElement(hotelImages),
         { count: faker.number.int({ min: 5, max: 7 }) }
       );
-      
-      const cloudinaryImageUrls = await Promise.all(
-        selectedHotelImages.map(url => 
-          uploadToCloudinary(url, `${hotel.id}/hotel-images`)
-        )
-      );
 
-      // Update hotel with Cloudinary URLs
-      await prisma.hotel.update({
-        where: { id: hotel.id },
+      const hotel = await prisma.hotel.create({
         data: {
-          logoPath: cloudinaryLogoUrl,
-          imagePaths: cloudinaryImageUrls.filter(url => url !== null)
-        }
+          name: `${hotelBrand} ${city.city} ${faker.helpers.arrayElement(hotelTypes)}`,
+          logoUrl: hotelLogos[hotelBrand],
+          address: `${faker.location.streetAddress()} ${faker.location.street()}`,
+          city: city.city,
+          starRating: faker.number.int({ min: 3, max: 5 }),
+          imageUrls: selectedHotelImages,
+          ownerId: hotelOwner.id,
+        },
       });
 
-      // Add room types and amenities
+      // Add room types with image URLs
       const roomTypes = ['Deluxe Suite', 'Standard Room', 'Executive Suite', 'Family Room', 'Presidential Suite', 'Ocean View Room', 'Garden Suite'];
       const roomAmenities = [
         'Free WiFi', 'Flat-screen TV', 'Air Conditioning', 'Mini Bar', 'Room Service',
@@ -230,18 +149,12 @@ async function main() {
         'Bathtub', 'Rain Shower', 'Work Desk', 'Lounge Area', 'Kitchen'
       ];
 
-      // Create room types with Cloudinary images
+      // Create room types with URLs directly
       const roomTypeCount = faker.number.int({ min: 2, max: 4 });
       for (let j = 0; j < roomTypeCount; j++) {
         const selectedRoomImages = faker.helpers.multiple(
           () => faker.helpers.arrayElement(roomImages),
           { count: faker.number.int({ min: 5, max: 7 }) }
-        );
-
-        const cloudinaryRoomImageUrls = await Promise.all(
-          selectedRoomImages.map(url => 
-            uploadToCloudinary(url, `${hotel.id}/rooms`)
-          )
         );
 
         await prisma.roomType.create({
@@ -252,7 +165,7 @@ async function main() {
               { count: faker.number.int({ min: 3, max: 8 })}
             ),
             pricePerNight: Number(faker.number.float({ min: 100, max: 1000, precision: 0.01 }).toFixed(2)),
-            images: cloudinaryRoomImageUrls.filter(url => url !== null),
+            imageUrls: selectedRoomImages,
             hotelId: hotel.id,
             quantity: faker.number.int({ min: 5, max: 20 }),
             availability: faker.number.int({ min: 5, max: 20 }),
@@ -261,9 +174,6 @@ async function main() {
       }
 
       currentOwnerIndex = (currentOwnerIndex + 1) % hotelOwners.length;
-      
-      // Add a small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 
