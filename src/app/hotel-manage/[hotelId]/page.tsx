@@ -193,7 +193,7 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
 
     const newImages = Array.from(e.target.files);
@@ -206,7 +206,7 @@ export default function HotelManagePage({ params }: { params: Promise<{ hotelId:
     }));
   };
 
-  const handleLogoUpload = (file: File) => {
+  const handleLogoUpload = async (file: File) => {
     const previewUrl = URL.createObjectURL(file);
     setFormData(prev => ({
       ...prev,

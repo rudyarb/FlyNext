@@ -70,7 +70,10 @@ export default function HotelDetailsPage() {
         if (!response.ok) throw new Error('Failed to fetch hotel details');
         const data = await response.json();
         setHotelDetails(data.hotelDetails);
-        setRoomAvailability(data.hotelDetails.roomTypes);
+        
+        // Store the initial room data with images
+        const initialRoomTypes = data.hotelDetails.roomTypes;
+        setRoomAvailability(initialRoomTypes);
 
         // Then check for dates in URL and fetch availability if present
         const checkInParam = searchParams.get('checkIn');
@@ -86,7 +89,28 @@ export default function HotelDetailsPage() {
           );
           if (!availabilityResponse.ok) throw new Error('Failed to fetch room availability');
           const availabilityData = await availabilityResponse.json();
-          setRoomAvailability(availabilityData.availability);
+          
+          // Merge availability data with existing room data to preserve images
+            interface AvailabilityInfo {
+            id: string;
+            availableRooms: number;
+            }
+
+            interface AvailabilityData {
+            availability: AvailabilityInfo[];
+            }
+
+            const updatedRoomTypes: RoomType[] = initialRoomTypes.map((room: RoomType) => {
+            const availabilityInfo: AvailabilityInfo | undefined = (availabilityData as AvailabilityData).availability.find(
+              (a: AvailabilityInfo) => a.id === room.id
+            );
+            return {
+              ...room,
+              availableRooms: availabilityInfo?.availableRooms ?? 0
+            };
+            });
+          
+          setRoomAvailability(updatedRoomTypes);
           setHasCheckedAvailability(true);
         }
       } catch (error) {
@@ -96,7 +120,7 @@ export default function HotelDetailsPage() {
     }
 
     initializeHotelPage();
-  }, [hotelId, searchParams]); // Include searchParams in dependencies
+  }, [hotelId, searchParams]);
 
   // Update the date change effect
   useEffect(() => {
@@ -107,7 +131,7 @@ export default function HotelDetailsPage() {
   }, [checkIn, checkOut, hotelDetails]); // Add hotelDetails as dependency
 
   async function fetchRoomAvailability(checkInDate = checkIn, checkOutDate = checkOut) {
-    if (!checkInDate || !checkOutDate) return;
+    if (!checkInDate || !checkOutDate || !hotelDetails) return;
 
     setLoading(true);
     setError('');
@@ -118,7 +142,19 @@ export default function HotelDetailsPage() {
       );
       if (!response.ok) throw new Error('Failed to fetch room availability');
       const data = await response.json();
-      setRoomAvailability(data.availability);
+      
+      // Merge availability data with existing room data
+      const updatedRoomTypes = hotelDetails.roomTypes.map(room => {
+        const availabilityInfo = data.availability.find(
+          (a: RoomType) => a.id === room.id
+        );
+        return {
+          ...room,
+          availableRooms: availabilityInfo?.availableRooms ?? 0
+        };
+      });
+      
+      setRoomAvailability(updatedRoomTypes);
       setHasCheckedAvailability(true);
     } catch (error) {
       setError('Failed to check room availability');
