@@ -1,0 +1,6 @@
+node_modules
+!node_modules/.prisma
+npm-debug.log
+.DS_Store
+.git
+.vscode

@@ -37,6 +37,7 @@ export async function POST(request) {
       id: user.id,
       email: user.email,
       role: user.role,
+      firstName: user.firstName,
     };
 
     // Generate the access and refresh tokens

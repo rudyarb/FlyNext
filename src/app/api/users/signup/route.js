@@ -1,36 +1,50 @@
 import { hashPassword } from "@utils/auth";
 import { prisma } from "@utils/db";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    // Get user info from input
-    const { firstName, lastName, email, password, phone, profilePic, role } = await req.json();
+    // Parse form data instead of JSON
+    const formData = await req.formData();
 
-    // Enforce required fields
+    // Extract fields from form data
+    const firstName = formData.get("firstName");
+    const lastName = formData.get("lastName");
+    const email = formData.get("email");
+    const password = formData.get("password");
+    const phone = formData.get("phone") || null;
+    const role = formData.get("role");
+    const profilePicture = formData.get("profilePicture"); // File object
+
+    // Validate required fields
     if (!firstName || !lastName || !email || !password || !role) {
-      return NextResponse.json({ message:
-        "All required fields must be filled (everything except for phone number and profile picture)." }, 
-        { status: 400 });
+      return NextResponse.json({ message: "All required fields must be filled." }, { status: 400 });
     }
 
-    // Allowed roles
+    // Validate role
     const allowedRoles = ["ADMIN", "USER"];
     if (!allowedRoles.includes(role)) {
-      return NextResponse.json({ message:
-        "Invalid role. Allowed roles: ADMIN, USER." }, 
-        { status: 400 });
+      return NextResponse.json({ message: "Invalid role. Allowed roles: ADMIN, USER." }, { status: 400 });
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return NextResponse.json({ message:
-        "Email already in use" }, 
-        { status: 400 });
+      return NextResponse.json({ message: "Email already in use" }, { status: 400 });
     }
 
-    // Create the new user
+    // Save profile picture (if provided)
+    let profilePicUrl = null;
+    if (profilePicture && profilePicture.name) {
+      const fileBuffer = await profilePicture.arrayBuffer();
+      const filePath = join(process.cwd(), "public/uploads", profilePicture.name);
+      await writeFile(filePath, Buffer.from(fileBuffer));
+      profilePicUrl = `/uploads/${profilePicture.name}`; // Publicly accessible path
+    }
+
+    // Create user
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -38,7 +52,7 @@ export async function POST(req) {
         email,
         password: hashPassword(password),
         phone,
-        profilePic,
+        profilePic: profilePicUrl,
         role,
       },
       select: {
@@ -47,22 +61,20 @@ export async function POST(req) {
         lastName: true,
         email: true,
         role: true,
+        profilePic: true,
       },
     });
 
-
-    // If the role is ADMIN, add them as a hotel owner
+    // If ADMIN, create hotel owner entry
     if (role === "ADMIN") {
       await prisma.hotelOwner.create({
-        data: {
-          userId: user.id,
-        },
+        data: { userId: user.id },
       });
     }
 
-    // Return success response with the user details
-    return NextResponse.json({ message: "User registered successfully" }, { status: 201 });
-  } catch (error) { // Catch any errors
-      return NextResponse.json({ message: "Error registering user" }, { status: 400 });
+    return NextResponse.json({ message: "User registered successfully", user }, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Error registering user" }, { status: 500 });
   }
 }
